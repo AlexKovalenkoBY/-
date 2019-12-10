@@ -1,0 +1,79 @@
+
+var g_nLoc  = Context.getSelectedLanguage();
+var template = '';
+var grid = 0;
+main();
+
+function main(){
+    var File = Context.createOutputObject();
+    var selectedObjcts = ArisData.getSelectedObjOccs();
+    var selectedObject = selectedObjcts[0]; //взяли первый выделенный объект
+    var selected_model = selectedObject.Model();  //взяли модель 
+    var group = selected_model.Group(); //взяли название группыЮ в которой находится модель 
+  //  var selectedCxn = selectedObject.ObjDef().CxnListFilter ( Constants.EDGES_OUT, [Constants.CT_EXEC_1,Constants.CT_EXEC_2] );
+    var selectedCxn = selectedObject.ObjDef().CxnListFilter ( Constants.EDGES_OUT, [Constants.CT_CONTR_TO_1,Constants.CT_CONTR_TO_1,Constants.CT_EXEC_2] );
+
+  //  var sn="";
+    var tn="";//СЮДА ПИШУТСЯ ФУНКЦИИ!!!!
+   File.Output("Перечень функций, в которых участвует  "+selectedObject.ObjDef().Name(g_nLoc),"Arial",14,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT|Constants.FMT_BOLD,0);
+ //  File.OutputLn(selectedObject.ObjDef().Name(g_nLoc),"Arial",14,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT |Constants.FMT_BOLD,0); 
+   File.BeginTable(100,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0); 
+   File.TableRow(); 
+   File.TableCell(" № п/п",8,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+   File.TableCell(" Описание функции ",27,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+   File.TableCell(" Название бизнес-процесса",65,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+   
+ //  File.TableCell(" Каталог",30,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+   selectedCxn = ArisData.Unique(selectedCxn);
+    var filteredOccs = [];
+   for (var i=0;i<selectedCxn.length;i++){
+       var temparray=selectedCxn[i].TargetObjDef().OccList().filter(function(myocc){return (!(myocc.SymbolNum()==Constants.ST_VAL_ADD_CHN_SML_1)&&!(myocc.SymbolNum()==Constants.ST_VAL_ADD_CHN_SML_2)&&!(myocc.SymbolNum()==Constants.ST_PRCS_IF))});//временный массив, в котором содержится массив Осс объектов, который надо разобрать и добавить в общий массив
+       for (var j=0;j<temparray.length;j++){
+           filteredOccs.push(temparray[j]);
+       }
+   }
+   /*
+   Более современный метод str.includes(substr, pos) возвращает true, если в строке str есть подстрока substr, либо false, если нет.
+   */
+   
+    var filtered2Occs=[];
+    var pathStr="";
+   for (var i=0;i<filteredOccs.length;i++){
+ //если в названии пути есть упоминание про "должно быть" или "в работе"
+ pathStr = filteredOccs[i].Model().Group().Path(g_nLoc,true);
+if (!(pathStr.indexOf("«как должно быть»",0)>0)&&!(pathStr.indexOf("\Н_",0)>0)&&!(pathStr.indexOf("\H_",0)>0)&&!(pathStr.indexOf("в работе",0)>0) &&!(pathStr.indexOf("«Как есть»",0)>0)&&!(pathStr.indexOf("Хранятся для сохранности объектов",0)>0)&&!(pathStr.indexOf("«Как есть»",0)>0)&&!(pathStr.indexOf("Перенесенные невостребованные папки, объекты из разных по статусу БМ ",0)>0)  ) {
+       filtered2Occs.push(filteredOccs[i]); 
+       }
+   }
+   var outputArray=[["",""]];
+   var func =""//filtered2Occs[0].ObjDef().Name(g_nLoc); //function
+   var bp= ""//filtered2Occs[0].Model().Group().Parent().Name(g_nLoc);  //BP name
+ //  outputArray[0]=[func,bp];
+   for (i=0;i<filtered2Occs.length;i++){ //формируем массив пар Функция:значение
+    outputArray[i]=[filtered2Occs[i].ObjDef().Name(g_nLoc),filtered2Occs[i].Model().Group().Parent().Name(g_nLoc)]
+   }
+   var numpos=1;
+  while (outputArray.length>0){
+   func = outputArray[0][0];
+   bp = outputArray[0][1];
+   outputArray.shift();
+   
+   for (i=0;i<outputArray.length;i++){
+    if (func==outputArray[i][0]) {
+        if (bp.indexOf(outputArray[i][1],0)==-1) {
+         bp=bp+"\n"+outputArray[i][1];
+        }
+     outputArray.slice([i],1);//[0] = "обработано"   
+    }
+   }
+     File.TableRow();    
+     File.TableCell(numpos+".",8,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+     File.TableCell(func,27,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_LEFT,0); //function
+     File.TableCell(bp,65,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_LEFT,0);  //BP name
+   numpos=numpos+1;
+   }
+ var s=0;
+    File.EndTable("",100, "Arial",10,Constants.C_BLACK,Constants.C_BLACK,0,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);
+    File.WriteReport();
+   
+}
