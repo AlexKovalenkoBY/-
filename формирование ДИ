@@ -1,0 +1,28 @@
+
+    
+
+function main(){
+var ogroups = ArisData.getSelectedGroups();
+var g_nloc = Context.getSelectedLanguage();
+var outfilereport = Context.createOutputObject(Context.getSelectedFormat(), Context.getSelectedFile());
+//var outfilereport.Init(Context.getSelectedLanguage());
+    if (ogroups.length == 1) {
+ //var searchItem = ArisData.GetDatabaseNames()[0].createSearchItem(Constants.AT_NAME, currentLocale, "*", Constants.SEARCH_CMP_EQUAL, false, true) //non-case-sensitive + search using wildcards
+ var epcModelList = ogroups[0].ModelList(true, [Constants.MT_EEPC]);
+ var temppos_type = []; 
+ for (var i=0;i<epcModelList.length;i++){ //со всех моделей собрали тип лица
+ temppos_type.push(epcModelList[i].ObjOccListBySymbol([Constants.ST_EMPL_TYPE]));
+ }
+ var alltypeFace=[];
+ for (var i=0;i<temppos_type.length;i++){
+   alltypeFace=alltypeFace.concat(temppos_type[i]);
+   }
+var s=0;
+            outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile());
+        }//
+        else {
+            Context.setScriptError(Constants.ERR_CANCEL);
+        }
+    
+}
+main();
