@@ -1,6 +1,4 @@
 
-    
-
 function main(){
 var ogroups = ArisData.getSelectedGroups();
 var g_nloc = Context.getSelectedLanguage();
@@ -13,9 +11,34 @@ var outfilereport = Context.createOutputObject(Context.getSelectedFormat(), Cont
  for (var i=0;i<epcModelList.length;i++){ //со всех моделей собрали тип лица
  temppos_type.push(epcModelList[i].ObjOccListBySymbol([Constants.ST_EMPL_TYPE]));
  }
- var alltypeFace=[];
+ var list_alltypeFaceOccs=[]; //Occ объектов "ТИП ЛИЦА" в выбранной группе!!!
  for (var i=0;i<temppos_type.length;i++){
-   alltypeFace=alltypeFace.concat(temppos_type[i]);
+   list_alltypeFaceOccs=list_alltypeFaceOccs.concat(temppos_type[i]);
+   }
+//формируем спискок должностей для всего БП 
+ var DolgnList = []; //список должностей для выбранной группы. формируются только из ObjDef
+ for (var i=0;i<list_alltypeFaceOccs.length;i++){ 
+    var temp_posobjdef = list_alltypeFaceOccs[i].ObjDef();
+    var cxnlist = temp_posobjdef.CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5);
+    for (var j=0;j<cxnlist.length;j++){
+      //  Dialogs.MsgBox(cxnlist[i].SourceObjDef().Name(g_nloc));
+    DolgnList.push(cxnlist[j].SourceObjDef() );
+  //  outfilereport.OutputLn(cxnlist[j].SourceObjDef().Name(g_nloc),"Helvetica",14,Constants.C_ORANGE,Constants.C_BLACK,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);  //вывел просто в файл для проерки. можно удалять
+   }
+ }
+   DolgnList = ArisData.Unique(DolgnList);
+   for (var i=0;i<1;i++){ // i<DolgnList.length для каждой должности начинаем формировать документ
+    var typeFace2objdefs= DolgnList[i].getConnectedObjs ( Constants.OT_PERS_TYPE ); //получили связанные с должзностью объекты тип лица ObjDef;
+    var typeFace2objOccs = [];
+    for (var i=0;i<typeFace2objdefs.length;j++){
+    typeFace2objOccs=typeFace2objdefs[i].OccList().filter(function (occobj){
+         var found = false;
+         for (var i=0;i<list_alltypeFaceOccs.length;i++){
+         if (occobj.ObjectID()==list_alltypeFaceOccs[i].ObjectID()) {found = true}
+         }
+        return found
+    })
+    }
    }
 var s=0;
             outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile());
@@ -26,3 +49,16 @@ var s=0;
     
 }
 main();
+
+/*
+
+% list_alltypeFaceOccs[262].ObjDef().Name(g_nloc)  = Второе лицо, ответственное за сохранность ценностей
+% list_alltypeFaceOccs[262].ObjDef().TypeNum() =  78 тип лица
+% list_alltypeFaceOccs[262].ObjDef().CxnList().length = 34  всего связей
+
+% list_alltypeFaceOccs[262].ObjDef().CxnListFilter(Constants.EDGES_INOUT,Constants.CT_EXEC_5).length =11 связанных объектов типа «ДОЛЖНОСТЬ»
+
+% list_alltypeFaceOccs[262].ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[2].SourceObjDef().Name(g_nloc) третий элемент массива связей источник (искомая должность) = 
+Заместитель начальника РКЦ 1, 2 группы
+
+*/
