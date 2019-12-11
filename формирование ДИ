@@ -1,72 +1,89 @@
-
+main();
 function main(){
 var ogroups = ArisData.getSelectedGroups();
-var g_nloc = Context.getSelectedLanguage();
+var g_nLoc = Context.getSelectedLanguage();
 var outfilereport = Context.createOutputObject(Context.getSelectedFormat(), Context.getSelectedFile());
-//var outfilereport.Init(Context.getSelectedLanguage());
     if (ogroups.length == 1) {
- //var searchItem = ArisData.GetDatabaseNames()[0].createSearchItem(Constants.AT_NAME, currentLocale, "*", Constants.SEARCH_CMP_EQUAL, false, true) //non-case-sensitive + search using wildcards
- var epcModelList = ogroups[0].ModelList(true, [Constants.MT_EEPC]);
+  var epcModelList = ogroups[0].ModelList(true, [Constants.MT_EEPC]);
  var temppos_type = []; 
  for (var i=0;i<epcModelList.length;i++){ //со всех моделей собрали тип лица
  temppos_type.push(epcModelList[i].ObjOccListBySymbol([Constants.ST_EMPL_TYPE]));
  }
- list_alltypeFaceOccs=[]; //Occ объектов "ТИП ЛИЦА" в выбранной группе!!!
- for (var i=0;i<temppos_type.length;i++){
-   list_alltypeFaceOccs=list_alltypeFaceOccs.concat(temppos_type[i]);
-   }
+ list_alltypeFaceOccs=[]; //Occ всех объектов "ТИП ЛИЦА" в выбранной группе!!!
+     for (var i=0;i<temppos_type.length;i++){
+       list_alltypeFaceOccs=list_alltypeFaceOccs.concat(temppos_type[i]);
+     }
   var list_alltypeFaceOccsIDs=[];
-  for (var i=0;i<list_alltypeFaceOccs.length;i++){
-    list_alltypeFaceOccsIDs[i]=list_alltypeFaceOccs[i].ObjectID();
-  }
+      for (var i=0;i<list_alltypeFaceOccs.length;i++){
+        list_alltypeFaceOccsIDs[i]=list_alltypeFaceOccs[i].ObjectID();
+      }
 //формируем спискок должностей для всего БП 
  var DolgnList = []; //список должностей для выбранной группы. формируются только из ObjDef
  for (var i=0;i<list_alltypeFaceOccs.length;i++){ 
     var temp_posobjdef = list_alltypeFaceOccs[i].ObjDef();
     var cxnlist = temp_posobjdef.CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5);
     for (var j=0;j<cxnlist.length;j++){
-      //  Dialogs.MsgBox(cxnlist[i].SourceObjDef().Name(g_nloc));
+      //  Dialogs.MsgBox(cxnlist[i].SourceObjDef().Name(g_nLoc));
     DolgnList.push(cxnlist[j].SourceObjDef() );
-  //  outfilereport.OutputLn(cxnlist[j].SourceObjDef().Name(g_nloc),"Helvetica",14,Constants.C_ORANGE,Constants.C_BLACK,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);  //вывел просто в файл для проерки. можно удалять
-   }
- }
-   DolgnList = ArisData.Unique(DolgnList);
-   for (var i=0;i<DolgnList.length;i++){ // i<DolgnList.length для каждой должности начинаем формировать документ
-    var typeFace2objdefs= DolgnList[i].getConnectedObjs ( Constants.OT_PERS_TYPE ); //получили связанные с должзностью объекты тип лица ObjDef;
-    var typeFace2objOccsArr = [];
-    for (var j=0;i<typeFace2objdefs.length;j++){
-    var     temp = typeFace2objdefs[j].OccList();
-    if (!temp.length==0) {
-     typeFace2objOccsArr.push(temp.filter(function (occobj){
-         var found = false;
-         var myID=occobj.ObjectID();
-         for (var i=0;i<list_alltypeFaceOccsIDs.length;i++){
-         if (myID==list_alltypeFaceOccsIDs[i]) {found = true}
-         }
-        return found
-    }))
-    } //if 
+  }
+ } // конец для for (var i=0;i<list_alltypeFaceOccs.length;i++){ 
+//     var outputArray=[["тип лица","должность","функция"]];
+ DolgnList = ArisData.Unique(DolgnList); //сформированный список должностей без повторов. может и не пригодится... 
+
+outputArray=[["","",""]];
+for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
+    var temptypeface = list_alltypeFaceOccs[i];//.ObjDef().Name();
+    var tempfunc = list_alltypeFaceOccs[i].getConnectedObjOccs ( [Constants.ST_SYS_FUNC_ACT,Constants.ST_SYS_FUNC_TRG,Constants.ST_FUNC,Constants.ST_FUNC_ACT,Constants.ST_FUNC_TRG,], Constants.EDGES_OUT );
+    for (var j=0;j<tempfunc.length;j++){ //функции
+        for( var k=0; k<temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5).length;k++){  //Роли
+          outputArray.push([list_alltypeFaceOccs[i].ObjDef().Name(g_nLoc),temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef().Name(g_nLoc),tempfunc[j].ObjDef().Name(g_nLoc) ])
+        }
     }
-   }
-var s=0;
-            outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile());
+}
+   outfilereport.BeginTable(100,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0); 
+   outfilereport.TableRow(); 
+   outfilereport.TableCell(" тип лица",33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+   outfilereport.TableCell(" должность",33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+   outfilereport.TableCell(" функция",34,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+        for (var i=0;i<outputArray.length;i++){
+           outfilereport.TableRow(); 
+           outfilereport.TableCell(outputArray[i][0],33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+           outfilereport.TableCell(outputArray[i][1],33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+           outfilereport.TableCell(outputArray[i][2],34,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+        }
+  outfilereport.EndTable("",100, "Arial",10,Constants.C_BLACK,Constants.C_BLACK,0,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);   
+  outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile());
         }//
         else {
             Context.setScriptError(Constants.ERR_CANCEL);
         }
-    
 }
-main();
+function init_di_element_class(){
+   var di_element_class = function(aris_occ_object ){
+           this.objOcc = aris_occ_object;
+           this.model = model; //прописать откуда брать 
+           this.childs = this.getChilds(); 
+           this.position = null;
+   }
+   //proto is short for prototype
+   var proto = di_element_class.prototype;
+   proto.get_Funcss = function(){};
+   proto.get_Group = function(){};
+   
+   
+   return di_element_class;
+}
+
 
 /*
 
-% list_alltypeFaceOccs[262].ObjDef().Name(g_nloc)  = Второе лицо, ответственное за сохранность ценностей
+% list_alltypeFaceOccs[262].ObjDef().Name(g_nLoc)  = Второе лицо, ответственное за сохранность ценностей
 % list_alltypeFaceOccs[262].ObjDef().TypeNum() =  78 тип лица
 % list_alltypeFaceOccs[262].ObjDef().CxnList().length = 34  всего связей
 
 % list_alltypeFaceOccs[262].ObjDef().CxnListFilter(Constants.EDGES_INOUT,Constants.CT_EXEC_5).length =11 связанных объектов типа «ДОЛЖНОСТЬ»
 
-% list_alltypeFaceOccs[262].ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[2].SourceObjDef().Name(g_nloc) третий элемент массива связей источник (искомая должность) = 
+% list_alltypeFaceOccs[262].ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[2].SourceObjDef().Name(g_nLoc) третий элемент массива связей источник (искомая должность) = 
 Заместитель начальника РКЦ 1, 2 группы
 
 */
