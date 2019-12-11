@@ -11,10 +11,14 @@ var outfilereport = Context.createOutputObject(Context.getSelectedFormat(), Cont
  for (var i=0;i<epcModelList.length;i++){ //со всех моделей собрали тип лица
  temppos_type.push(epcModelList[i].ObjOccListBySymbol([Constants.ST_EMPL_TYPE]));
  }
- var list_alltypeFaceOccs=[]; //Occ объектов "ТИП ЛИЦА" в выбранной группе!!!
+ list_alltypeFaceOccs=[]; //Occ объектов "ТИП ЛИЦА" в выбранной группе!!!
  for (var i=0;i<temppos_type.length;i++){
    list_alltypeFaceOccs=list_alltypeFaceOccs.concat(temppos_type[i]);
    }
+  var list_alltypeFaceOccsIDs=[];
+  for (var i=0;i<list_alltypeFaceOccs.length;i++){
+    list_alltypeFaceOccsIDs[i]=list_alltypeFaceOccs[i].ObjectID();
+  }
 //формируем спискок должностей для всего БП 
  var DolgnList = []; //список должностей для выбранной группы. формируются только из ObjDef
  for (var i=0;i<list_alltypeFaceOccs.length;i++){ 
@@ -27,17 +31,21 @@ var outfilereport = Context.createOutputObject(Context.getSelectedFormat(), Cont
    }
  }
    DolgnList = ArisData.Unique(DolgnList);
-   for (var i=0;i<1;i++){ // i<DolgnList.length для каждой должности начинаем формировать документ
+   for (var i=0;i<DolgnList.length;i++){ // i<DolgnList.length для каждой должности начинаем формировать документ
     var typeFace2objdefs= DolgnList[i].getConnectedObjs ( Constants.OT_PERS_TYPE ); //получили связанные с должзностью объекты тип лица ObjDef;
-    var typeFace2objOccs = [];
-    for (var i=0;i<typeFace2objdefs.length;j++){
-    typeFace2objOccs=typeFace2objdefs[i].OccList().filter(function (occobj){
+    var typeFace2objOccsArr = [];
+    for (var j=0;i<typeFace2objdefs.length;j++){
+    var     temp = typeFace2objdefs[j].OccList();
+    if (!temp.length==0) {
+     typeFace2objOccsArr.push(temp.filter(function (occobj){
          var found = false;
-         for (var i=0;i<list_alltypeFaceOccs.length;i++){
-         if (occobj.ObjectID()==list_alltypeFaceOccs[i].ObjectID()) {found = true}
+         var myID=occobj.ObjectID();
+         for (var i=0;i<list_alltypeFaceOccsIDs.length;i++){
+         if (myID==list_alltypeFaceOccsIDs[i]) {found = true}
          }
         return found
-    })
+    }))
+    } //if 
     }
    }
 var s=0;
