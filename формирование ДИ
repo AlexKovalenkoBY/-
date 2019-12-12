@@ -94,10 +94,11 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     g_ooutfile.OutputLnF("В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" несет ответственность за:","Regular");
 
     g_ooutfile.EndSection(); 
-    g_ooutfile.WriteReport();totalfilecount++;
+    g_ooutfile.WriteReport();
+    totalfilecount++;
 
     } // for (var i=0;i<1;i++){ //DolgnList.length;i++){ временно формируем  только 1 документ
-     Dialogs.MsgBox("в каталоге "+Context.getSelectedPath()+" сформировано "+totalfilecount+" файлов ДИ");
+     Dialogs.MsgBox("По бизнес-процессу "+ogroups[0].Name(g_nLoc)+" в каталоге "+Context.getSelectedPath()+" сформировано "+totalfilecount+" файлов ДИ");
       outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile()); //закрыли контекстный файл           
         }//
         else {
