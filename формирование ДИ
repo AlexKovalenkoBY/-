@@ -17,43 +17,77 @@ var outfilereport = Context.createOutputObject(Context.getSelectedFormat(), Cont
       for (var i=0;i<list_alltypeFaceOccs.length;i++){
         list_alltypeFaceOccsIDs[i]=list_alltypeFaceOccs[i].ObjectID();
       }
-//формируем спискок должностей для всего БП 
- var DolgnList = []; //список должностей для выбранной группы. формируются только из ObjDef
- for (var i=0;i<list_alltypeFaceOccs.length;i++){ 
-    var temp_posobjdef = list_alltypeFaceOccs[i].ObjDef();
-    var cxnlist = temp_posobjdef.CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5);
-    for (var j=0;j<cxnlist.length;j++){
-      //  Dialogs.MsgBox(cxnlist[i].SourceObjDef().Name(g_nLoc));
-    DolgnList.push(cxnlist[j].SourceObjDef() );
-  }
- } // конец для for (var i=0;i<list_alltypeFaceOccs.length;i++){ 
-//     var outputArray=[["тип лица","должность","функция"]];
- DolgnList = ArisData.Unique(DolgnList); //сформированный список должностей без повторов. может и не пригодится... 
+      
+var DolgnList = []; //список должностей для выбранной группы. 
 var di_element_class = init_di_element_class(); //инициировали класс в обшем
-var di_elements = init_di_element_class[];
-outputArray=[["","",""]];
+var di_elements = [];
+// начинаем формировать избфточную структуру данных для формирования ДИ 
+//outputArray=[["","",""]];
 for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     var temptypeface = list_alltypeFaceOccs[i];//.ObjDef().Name();
     var tempfunc = list_alltypeFaceOccs[i].getConnectedObjOccs ( [Constants.ST_SYS_FUNC_ACT,Constants.ST_SYS_FUNC_TRG,Constants.ST_FUNC,Constants.ST_FUNC_ACT,Constants.ST_FUNC_TRG,], Constants.EDGES_OUT );
     for (var j=0;j<tempfunc.length;j++){ //функции
         for( var k=0; k<temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5).length;k++){  //Роли
-          outputArray.push([list_alltypeFaceOccs[i].ObjDef().Name(g_nLoc),temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef().Name(g_nLoc),tempfunc[j].ObjDef().Name(g_nLoc) ])
+  //        outputArray.push([list_alltypeFaceOccs[i].ObjDef().Name(g_nLoc),temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef().Name(g_nLoc),tempfunc[j].ObjDef().Name(g_nLoc) ])
+                                            // тип лица     функция      должность                                                          
+        di_elements.push(new di_element_class(temptypeface,tempfunc[j],temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef())); //заполняем массив объектов класса
+        DolgnList.push(temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef().Name(g_nLoc));
         }
     }
 }
-   outfilereport.BeginTable(100,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0); 
-   outfilereport.TableRow(); 
-   outfilereport.TableCell(" тип лица",33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-   outfilereport.TableCell(" должность",33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-   outfilereport.TableCell(" функция",34,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-        for (var i=0;i<outputArray.length;i++){
-           outfilereport.TableRow(); 
-           outfilereport.TableCell(outputArray[i][0],33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-           outfilereport.TableCell(outputArray[i][1],33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-           outfilereport.TableCell(outputArray[i][2],34,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-        }
-  outfilereport.EndTable("",100, "Arial",10,Constants.C_BLACK,Constants.C_BLACK,0,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);   
-  outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile());
+   DolgnList = ArisData.Unique(DolgnList); //сформированный список должностей без повторов. кол-во записей в нем = кол-ву выходных файлов
+                                                        /*   outfilereport.BeginTable(100,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0); 
+                                                           outfilereport.TableRow(); 
+                                                           outfilereport.TableCell(" тип лица",33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+                                                           outfilereport.TableCell(" должность",33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+                                                           outfilereport.TableCell(" функция",34,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+                                                                for (var i=0;i<outputArray.length;i++){
+                                                                   outfilereport.TableRow(); 
+                                                                   outfilereport.TableCell(outputArray[i][0],33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+                                                                   outfilereport.TableCell(outputArray[i][1],33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+                                                                   outfilereport.TableCell(outputArray[i][2],34,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
+                                                                }
+                                                          outfilereport.EndTable("",100, "Arial",10,Constants.C_BLACK,Constants.C_BLACK,0,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);   
+                                                          outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile());*/
+    //        var di_element_class = function(type_face,func,position )  = objOcc ДОЛЖНОСТЬ 
+    //начинаем формирование файлов
+    for (var i=0;i<1;i++){ //DolgnList.length;i++){ временно формируем  только 1 документ
+        // createOutputObject ( OutputFormat p_OutputFormat, String p_sFileName )
+    g_ooutfile = Context.createOutputObject(Constants.OUTWORD, DolgnList[i]+".doc");
+    g_ooutfile.Init(Context.getSelectedLanguage());
+    // Форматы строк для формирования отчета (стили) 
+    g_ooutfile.DefineF("Title 1", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_LEFT,95,0,0,0,0,1);      
+    g_ooutfile.DefineF("Regular","Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_JUSTIFY, 0, 0, 0, 0, 0, 1);
+    g_ooutfile.DefineF("RegularCenter","Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_CENTER, 0, 0, 0, 0, 0, 1);
+    g_ooutfile.DefineF("Header", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_LEFT | Constants.FMT_BOLD,0,0,0,0,0,1);
+    g_ooutfile.DefineF("Table", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_LEFT,1,1,0,0,0,1);
+    g_ooutfile.DefineF("TableCenter", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_CENTER,1,1,0,0,0,1);
+    g_ooutfile.DefineF("TableHat", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_CENTER | Constants.FMT_VCENTER,1,1,0,0,0,1);
+    g_ooutfile.DefineF("Indent0","Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_JUSTIFY, 0, 0, 0, 0, 0, 1);       
+//    BeginSection ( double p_dPageHeight, double p_dPageWidth, double p_dDistHeader, double p_dDistFooter, int p_iLeftMargin, int p_iRightMargin, int p_iTopMargin, int p_iBottomMargin, boolean p_bAcceptHeaderFooter, int p_nType )
+    g_ooutfile.BeginSection(297, 210, 10, 10, 30, 10, 10, 10, false, Constants.SECTION_DEFAULT); //Header File.BeginHeader(); 
+    var colWidthList = new java.util.ArrayList(); colWidthList.add(50); colWidthList.add(50);
+    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+    g_ooutfile.TableRow(); 
+    // TableCellF ( double p_dValue, int rowSpan, int colSpan, String p_sStyleSheetName )
+    g_ooutfile.TableCell ( "ОАО \" Белагропромбанк\"",50,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_CENTER,0);
+    g_ooutfile.TableCell ( "УТВЕРЖДАЮ \n руководитель структурного подразделения \n _____________________ ФИО \n «___»________________201     г.", 50,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_CENTER,0);
+    g_ooutfile.EndTable("", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
+    g_ooutfile.EndHeader(); //Footer File.BeginFooter(); File.BeginTable(100, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_CENTER, 0); File.TableRow(); File.TableCell("Content table footer", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_CENTER | Constants.FMT_VCENTER, 0); File.EndTable("Test", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); File.EndFooter(); //Sets the autonumbering on File.SetAutoTOCNumbering(true); //Defines the style for the four levels in the TOC File.SetTOCFormat(0, "Arial", 20, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_BOLD | Constants.FMT_ITALIC, 0, 0, 0, 0); File.SetTOCFormat(1, "Arial", 16, Constants.C_GREEN, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_BOLD, 5, 5, 2, 2); File.SetTOCFormat(2, "Arial", 12, Constants.C_RED, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_ITALIC, 10 , 5, 2, 2); File.SetTOCFormat(3, "Arial", 10, Constants.C_BLUE, Constants.C_WHITE, Constants.FMT_LEFT, 15, 5, 2, 2); //Output text File.OutputLn("Table_of_Contents", "Arial", 30, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT, 0); //Adds the table of content File.OutputField(Constants.FIELD_TOC, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT); 
+   // g_ooutfile.EndSection(); 
+   //g_ooutfile.BeginSection(297, 210, 10, 10, 30, 10, 10, 10, false, Constants.SECTION_DEFAULT); //Header File.BeginHeader(); 
+    g_ooutfile.OutputLnF(" ДОЛЖНОСТНАЯ ИНСТРУКЦИЯ \n ______________№ _____ \n г.Минск \n","Regular");
+    g_ooutfile.OutputLnF(DolgnList[i],"Regular");
+    g_ooutfile.OutputLn("УКАЗАТЬ СТРУКТУРНОЕ ПОДРАЗДЕЛЕНИЕ","Times New Roman",14,Constants.C_RED,Constants.C_WHITE,Constants.FMT_LEFT|Constants.FMT_BOLD,0);
+    g_ooutfile.OutputLnF("\n Глава 1\nОБЩИЕ ПОЛОЖЕНИЯ","RegularCenter");
+    //ВОТ ТУТ НАДО ВСТАВИТЬ ГЛАВУ 1 
+    //ГЛАВА2 - ОБЯЗАННОСТИ - ФОРМИРУЕМ НА ОСНОВАНИИ ИМЕЮЩЕГОСЯ МАССИВА 
+    
+    //КОНЕЦ ФОРМИРОВАНИЯ ГЛАВЫ 2
+    g_ooutfile.EndSection(); 
+    g_ooutfile.WriteReport();
+    outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile()); //закрыли контекстный файл 
+    }
         }//
         else {
             Context.setScriptError(Constants.ERR_CANCEL);
@@ -61,16 +95,15 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
 }
 function init_di_element_class(){
    var di_element_class = function(type_face,func,position ){
-           this.objOcc = type_face;
-           this.func = func; 
-           this.position = position;
+           this.objOcc = type_face; //ТИП ЛИЦА
+           this.func = func;  //ФУНКЦИЯ
+           this.position = position; //ДОЛЖНОСТЬ 
            this.subprocess = type_face.Model();
    }
    //proto is short for prototype
    var proto = di_element_class.prototype;
    proto.get_Funcss = function(){};
    proto.get_Group = function(){};
-   
-   
+  
    return di_element_class;
 }
