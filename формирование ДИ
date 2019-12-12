@@ -86,4 +86,13 @@ function init_di_element_class(){
 % list_alltypeFaceOccs[262].ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[2].SourceObjDef().Name(g_nLoc) третий элемент массива связей источник (искомая должность) = 
 Заместитель начальника РКЦ 1, 2 группы
 
+% alltypeFace[262].ObjDef().Name(g_nloc)  = Второе лицо, ответственное за сохранность ценностей
+% alltypeFace[262].ObjDef().TypeNum() =  78 тип лица
+% alltypeFace[262].ObjDef().CxnList().length = 34  всего связей
+
+% alltypeFace[262].ObjDef().CxnListFilter(Constants.EDGES_INOUT,Constants.CT_EXEC_5).length =11 связанных объектов типа «ДОЛЖНОСТЬ»
+
+% alltypeFace[262].ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[2].SourceObjDef().Name(g_nloc) третий элемент массива связей источник (искомая должность) = 
+Заместитель начальника РКЦ 1, 2 группы
+
 */
