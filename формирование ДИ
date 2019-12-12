@@ -36,22 +36,11 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     }
 }
    DolgnList = ArisData.Unique(DolgnList); //сформированный список должностей без повторов. кол-во записей в нем = кол-ву выходных файлов
-                                                        /*   outfilereport.BeginTable(100,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0); 
-                                                           outfilereport.TableRow(); 
-                                                           outfilereport.TableCell(" тип лица",33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-                                                           outfilereport.TableCell(" должность",33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-                                                           outfilereport.TableCell(" функция",34,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-                                                                for (var i=0;i<outputArray.length;i++){
-                                                                   outfilereport.TableRow(); 
-                                                                   outfilereport.TableCell(outputArray[i][0],33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-                                                                   outfilereport.TableCell(outputArray[i][1],33,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-                                                                   outfilereport.TableCell(outputArray[i][2],34,"Arial",12,Constants.C_BLACK,Constants.C_WHITE,0,Constants.FMT_CENTER,0); 
-                                                                }
-                                                          outfilereport.EndTable("",100, "Arial",10,Constants.C_BLACK,Constants.C_BLACK,0,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);   
-                                                          outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile());*/
+                                                      
     //        var di_element_class = function(type_face,func,position )  = objOcc ДОЛЖНОСТЬ 
     //начинаем формирование файлов
-    for (var i=0;i<1;i++){ //DolgnList.length;i++){ временно формируем  только 1 документ
+   var totalfilecount=1;
+   for (var i=0;i<DolgnList.length;i++){ //DolgnList.length;i++){ временно формируем  только 1 документ
         // createOutputObject ( OutputFormat p_OutputFormat, String p_sFileName )
     g_ooutfile = Context.createOutputObject(Constants.OUTWORD, DolgnList[i]+".doc");
     g_ooutfile.Init(Context.getSelectedLanguage());
@@ -82,12 +71,34 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     g_ooutfile.OutputLnF("\n Глава 1\nОБЩИЕ ПОЛОЖЕНИЯ","RegularCenter");
     //ВОТ ТУТ НАДО ВСТАВИТЬ ГЛАВУ 1 
     //ГЛАВА2 - ОБЯЗАННОСТИ - ФОРМИРУЕМ НА ОСНОВАНИИ ИМЕЮЩЕГОСЯ МАССИВА 
-    
-    //КОНЕЦ ФОРМИРОВАНИЯ ГЛАВЫ 2
-    g_ooutfile.EndSection(); 
-    g_ooutfile.WriteReport();
-    outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile()); //закрыли контекстный файл 
+        g_ooutfile.OutputLnF("\n Глава 2\nДОЛЖНОСТНЫЕ ОБЯЗАННОСТИ","RegularCenter");
+    g_ooutfile.OutputLnF("В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+" сотрудник выполняет следующие функции:","Regular");
+/*    g_ooutfilepos = Context.createOutputObject(Constants.OUTTEXT, DolgnList[i]+"err.txt");
+    for (j=2465; i<di_elements.length;j++){
+    g_ooutfile.OutputLnF(1+j+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";"+di_elements[j].position.Name(g_nLoc),"Regular");
     }
+    g_ooutfilepos.WriteReport();*/
+    var count =1;
+    for (j=0; j<di_elements.length;j++){
+        if (di_elements[j].position.Name(g_nLoc)==DolgnList[i]) {
+            if (di_elements[j].func.ObjDef().Name(g_nLoc)==""){Dialogs.MsgBox(j)}
+        g_ooutfile.OutputLnF(count+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";","Regular");
+        count++;
+        }
+    }
+    //КОНЕЦ ФОРМИРОВАНИЯ ГЛАВЫ 2
+    g_ooutfile.OutputLnF("\n Глава 3\nПРАВА","RegularCenter");
+    g_ooutfile.OutputLnF("В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" имеет право:","Regular");
+
+    g_ooutfile.OutputLnF("\n Глава 4\nОТВЕТСТВЕННОСТЬ","RegularCenter");
+    g_ooutfile.OutputLnF("В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" несет ответственность за:","Regular");
+
+    g_ooutfile.EndSection(); 
+    g_ooutfile.WriteReport();totalfilecount++;
+
+    } // for (var i=0;i<1;i++){ //DolgnList.length;i++){ временно формируем  только 1 документ
+     Dialogs.MsgBox("в каталоге "+Context.getSelectedPath()+" сформировано "+totalfilecount+" файлов ДИ");
+      outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile()); //закрыли контекстный файл           
         }//
         else {
             Context.setScriptError(Constants.ERR_CANCEL);
