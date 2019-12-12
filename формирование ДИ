@@ -29,7 +29,8 @@ var outfilereport = Context.createOutputObject(Context.getSelectedFormat(), Cont
  } // конец для for (var i=0;i<list_alltypeFaceOccs.length;i++){ 
 //     var outputArray=[["тип лица","должность","функция"]];
  DolgnList = ArisData.Unique(DolgnList); //сформированный список должностей без повторов. может и не пригодится... 
-
+var di_element_class = init_di_element_class(); //инициировали класс в обшем
+var di_elements = init_di_element_class[];
 outputArray=[["","",""]];
 for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     var temptypeface = list_alltypeFaceOccs[i];//.ObjDef().Name();
@@ -59,11 +60,11 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
         }
 }
 function init_di_element_class(){
-   var di_element_class = function(aris_occ_object ){
-           this.objOcc = aris_occ_object;
-           this.model = model; //прописать откуда брать 
-           this.childs = this.getChilds(); 
-           this.position = null;
+   var di_element_class = function(type_face,func,position ){
+           this.objOcc = type_face;
+           this.func = func; 
+           this.position = position;
+           this.subprocess = type_face.Model();
    }
    //proto is short for prototype
    var proto = di_element_class.prototype;
@@ -73,26 +74,3 @@ function init_di_element_class(){
    
    return di_element_class;
 }
-
-
-/*
-
-% list_alltypeFaceOccs[262].ObjDef().Name(g_nLoc)  = Второе лицо, ответственное за сохранность ценностей
-% list_alltypeFaceOccs[262].ObjDef().TypeNum() =  78 тип лица
-% list_alltypeFaceOccs[262].ObjDef().CxnList().length = 34  всего связей
-
-% list_alltypeFaceOccs[262].ObjDef().CxnListFilter(Constants.EDGES_INOUT,Constants.CT_EXEC_5).length =11 связанных объектов типа «ДОЛЖНОСТЬ»
-
-% list_alltypeFaceOccs[262].ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[2].SourceObjDef().Name(g_nLoc) третий элемент массива связей источник (искомая должность) = 
-Заместитель начальника РКЦ 1, 2 группы
-
-% alltypeFace[262].ObjDef().Name(g_nloc)  = Второе лицо, ответственное за сохранность ценностей
-% alltypeFace[262].ObjDef().TypeNum() =  78 тип лица
-% alltypeFace[262].ObjDef().CxnList().length = 34  всего связей
-
-% alltypeFace[262].ObjDef().CxnListFilter(Constants.EDGES_INOUT,Constants.CT_EXEC_5).length =11 связанных объектов типа «ДОЛЖНОСТЬ»
-
-% alltypeFace[262].ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[2].SourceObjDef().Name(g_nloc) третий элемент массива связей источник (искомая должность) = 
-Заместитель начальника РКЦ 1, 2 группы
-
-*/
