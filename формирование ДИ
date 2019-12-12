@@ -39,7 +39,7 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
                                                       
     //        var di_element_class = function(type_face,func,position )  = objOcc ДОЛЖНОСТЬ 
     //начинаем формирование файлов
-   var totalfilecount=1;
+   var totalfilecount=0;
    for (var i=0;i<DolgnList.length;i++){ //DolgnList.length;i++){ временно формируем  только 1 документ
         // createOutputObject ( OutputFormat p_OutputFormat, String p_sFileName )
     g_ooutfile = Context.createOutputObject(Constants.OUTWORD, DolgnList[i]+".doc");
@@ -73,15 +73,18 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     //ГЛАВА2 - ОБЯЗАННОСТИ - ФОРМИРУЕМ НА ОСНОВАНИИ ИМЕЮЩЕГОСЯ МАССИВА 
         g_ooutfile.OutputLnF("\n Глава 2\nДОЛЖНОСТНЫЕ ОБЯЗАННОСТИ","RegularCenter");
     g_ooutfile.OutputLnF("В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+" сотрудник выполняет следующие функции:","Regular");
-/*    g_ooutfilepos = Context.createOutputObject(Constants.OUTTEXT, DolgnList[i]+"err.txt");
-    for (j=2465; i<di_elements.length;j++){
-    g_ooutfile.OutputLnF(1+j+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";"+di_elements[j].position.Name(g_nLoc),"Regular");
-    }
-    g_ooutfilepos.WriteReport();*/
+   g_ooutfilepos = Context.createOutputObject(Constants.OUTTEXT, DolgnList[i]+"err.txt");
+ /*   for (j=0; j<di_elements.length;j++){
+    //g_ooutfile.OutputLnF(1+j+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";"+di_elements[j].position.Name(g_nLoc),"Regular");
+    if (di_elements[j].position.Name(g_nLoc)=="Начальник Управления кассовых операций") {
+    Dialogs.MsgBox(j)}
+    }*/
+    g_ooutfilepos.WriteReport();
     var count =1;
-    for (j=0; j<di_elements.length;j++){
-        if (di_elements[j].position.Name(g_nLoc)==DolgnList[i]) {
-            if (di_elements[j].func.ObjDef().Name(g_nLoc)==""){Dialogs.MsgBox(j)}
+    for (j=161; j<di_elements.length;j++){
+//        if (di_elements[j].position.Name(g_nLoc)==DolgnList[i]) {
+        if (di_elements[j].position.Name(g_nLoc).indexOf(DolgnList[i])>=0) {   // pathStr.indexOf("\Н_",0)>0
+          //  if (di_elements[j].func.ObjDef().Name(g_nLoc)==""){Dialogs.MsgBox(j)}
         g_ooutfile.OutputLnF(count+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";","Regular");
         count++;
         }
