@@ -22,27 +22,22 @@ var DolgnList = []; //список должностей для выбранно�
 var di_element_class = init_di_element_class(); //инициировали класс в обшем
 var di_elements = [];
 // начинаем формировать избфточную структуру данных для формирования ДИ 
-//outputArray=[["","",""]];
 for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     var temptypeface = list_alltypeFaceOccs[i];//.ObjDef().Name();
     var tempfunc = list_alltypeFaceOccs[i].getConnectedObjOccs ( [Constants.ST_SYS_FUNC_ACT,Constants.ST_SYS_FUNC_TRG,Constants.ST_FUNC,Constants.ST_FUNC_ACT,Constants.ST_FUNC_TRG,], Constants.EDGES_OUT );
     for (var j=0;j<tempfunc.length;j++){ //функции
         for( var k=0; k<temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5).length;k++){  //Роли
-  //        outputArray.push([list_alltypeFaceOccs[i].ObjDef().Name(g_nLoc),temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef().Name(g_nLoc),tempfunc[j].ObjDef().Name(g_nLoc) ])
                                             // тип лица     функция      должность                                                          
         di_elements.push(new di_element_class(temptypeface,tempfunc[j],temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef())); //заполняем массив объектов класса
-        DolgnList.push(temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef().Name(g_nLoc));
+        DolgnList.push(temptypeface.ObjDef().CxnListFilter(Constants.EDGES_IN,Constants.CT_EXEC_5)[k].SourceObjDef());//.Name(g_nLoc));
         }
     }
 }
    DolgnList = ArisData.Unique(DolgnList); //сформированный список должностей без повторов. кол-во записей в нем = кол-ву выходных файлов
-                                                      
-    //        var di_element_class = function(type_face,func,position )  = objOcc ДОЛЖНОСТЬ 
     //начинаем формирование файлов
    var totalfilecount=0;
    for (var i=0;i<DolgnList.length;i++){ //DolgnList.length;i++){ временно формируем  только 1 документ
-        // createOutputObject ( OutputFormat p_OutputFormat, String p_sFileName )
-    g_ooutfile = Context.createOutputObject(Constants.OUTWORD, DolgnList[i]+".doc");
+    g_ooutfile = Context.createOutputObject(Constants.OUTWORD, DolgnList[i].Name(g_nLoc)+".doc");
     g_ooutfile.Init(Context.getSelectedLanguage());
     // Форматы строк для формирования отчета (стили) 
     g_ooutfile.DefineF("Title 1", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_LEFT,95,0,0,0,0,1);      
@@ -68,30 +63,74 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
    // g_ooutfile.EndSection(); 
    //g_ooutfile.BeginSection(297, 210, 10, 10, 30, 10, 10, 10, false, Constants.SECTION_DEFAULT); //Header File.BeginHeader(); 
     g_ooutfile.OutputLnF(" ДОЛЖНОСТНАЯ ИНСТРУКЦИЯ \n ______________№ _____ \n г.Минск \n","Regular");
-    g_ooutfile.OutputLnF(DolgnList[i],"Regular");
+    g_ooutfile.OutputLnF(DolgnList[i].Name(g_nLoc),"Regular");
     g_ooutfile.OutputLn("УКАЗАТЬ СТРУКТУРНОЕ ПОДРАЗДЕЛЕНИЕ","Times New Roman",14,Constants.C_RED,Constants.C_WHITE,Constants.FMT_LEFT|Constants.FMT_BOLD,0);
-    g_ooutfile.OutputLnF("\n Глава 1\nОБЩИЕ ПОЛОЖЕНИЯ","RegularCenter");
+    g_ooutfile.OutputLnF("\nГлава 1\nОБЩИЕ ПОЛОЖЕНИЯ","RegularCenter");
     //ВОТ ТУТ НАДО ВСТАВИТЬ ГЛАВУ 1 
+    var totalcontDI = 1;
+    if (DolgnList[i].Attribute("199381",g_nLoc).GetValue(false).length()!=0) { //если атрибуд должности ДИ1 непустой 
+    var glavatext = "";
+    glavatext= DolgnList[i].Attribute("199381",g_nLoc).GetValue(false);
+    glavatext=glavatext.split("\n");
+
+    for (var k=0;k<glavatext.length;k++){
+      //  g_ooutfile.Output("\t"+totalcontDI+". "+glavatext[k],"Times New Roman", 14, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_JUSTIFY, 0);
+      glavatext[k].slice()
+      g_ooutfile.OutputF("\t"+totalcontDI+". "+glavatext[k]+"\n","Regular");
+        totalcontDI++;
+    }
+    }
+    else{ //если атрибут должности ДИ1 пустой, то в ДИ пишем, что не заполнен атрибут № 199381 объекта "Должность "
+         g_ooutfile.OutputLnF("\t не заполнен атрибут № 199381 объекта \"Должность \" ","Regular"); 
+    }
     //ГЛАВА2 - ОБЯЗАННОСТИ - ФОРМИРУЕМ НА ОСНОВАНИИ ИМЕЮЩЕГОСЯ МАССИВА 
-        g_ooutfile.OutputLnF("\n Глава 2\nДОЛЖНОСТНЫЕ ОБЯЗАННОСТИ","RegularCenter");
-    g_ooutfile.OutputLnF("\tВ рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+" сотрудник выполняет следующие функции:","Regular");
+        g_ooutfile.OutputLnF("\nГлава 2\nДОЛЖНОСТНЫЕ ОБЯЗАННОСТИ","RegularCenter");
+    g_ooutfile.OutputLnF("\t"+totalcontDI+". "+"В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+" сотрудник выполняет следующие функции:","Regular");
+//    totalcontDI++;
     var count =1;
-    for (j=161; j<di_elements.length;j++){
+    for (j=0; j<di_elements.length;j++){
 //        if (di_elements[j].position.Name(g_nLoc)==DolgnList[i]) {
-        if (di_elements[j].position.Name(g_nLoc).indexOf(DolgnList[i])>-1) {   // pathStr.indexOf("\Н_",0)>0
-          //  if (di_elements[j].func.ObjDef().Name(g_nLoc)==""){Dialogs.MsgBox(j)}
-        g_ooutfile.OutputLnF(count+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";","Regular");
+        if (di_elements[j].position.Name(g_nLoc).indexOf(DolgnList[i].Name(g_nLoc))>-1) {   // pathStr.indexOf("\Н_",0)>0
+        g_ooutfile.OutputLnF("\t"+totalcontDI+"."+count+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";","Regular");
         count++;
+  //      totalcontDI++;
         }
     }
     //КОНЕЦ ФОРМИРОВАНИЯ ГЛАВЫ 2
-    g_ooutfile.OutputLnF("\n Глава 3\nПРАВА","RegularCenter");
-    g_ooutfile.OutputLnF("\tВ рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" имеет право:","Regular");
+    g_ooutfile.OutputLnF("\nГлава 3\nПРАВА","RegularCenter");
+    totalcontDI++;
+    g_ooutfile.OutputLnF("\t"+totalcontDI+". "+"В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ " "+DolgnList[i].Name(g_nLoc)+" имеет право:","Regular");
+    
+    if (DolgnList[i].Attribute("264917",g_nLoc).GetValue(false).length()!=0) { //если атрибуд должности ДИ1 непустой 
+    glavatext = "";
+    glavatext= DolgnList[i].Attribute("264917",g_nLoc).GetValue(false);
+    glavatext=glavatext.split("\n");
+        for (var k=0;k<glavatext.length;k++){
+        g_ooutfile.OutputF("\t"+totalcontDI+"."+glavatext[k]+"\n","Regular");
+        }
+    }
+    else{ //если атрибут должности ДИ1 пустой, то в ДИ пишем, что не заполнен атрибут № 264917 объекта "Должность "
+         g_ooutfile.OutputLnF("\t не заполнен атрибут № 264917 объекта \"Должность \" ","Regular"); 
+    }
+    g_ooutfile.OutputLnF("\nГлава 4\nОТВЕТСТВЕННОСТЬ","RegularCenter");
+    totalcontDI++;
+    g_ooutfile.OutputLnF("\t"+totalcontDI+". "+"В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ " "+DolgnList[i].Name(g_nLoc)+" несет ответственность за:","Regular");
+    if (DolgnList[i].Attribute("330453",g_nLoc).GetValue(false).length()!=0) { //если атрибуд должности ДИ1 непустой 
+    glavatext = "";
+    glavatext= DolgnList[i].Attribute("330453",g_nLoc).GetValue(false);
+    glavatext=glavatext.split("\n");
+        for (var k=0;k<glavatext.length;k++){
+        g_ooutfile.OutputF("\t"+totalcontDI+"."+glavatext[k]+"\n","Regular");
+       //  totalcontDI++;
+        }
+        totalcontDI=0;
+    }
+    else{ //если атрибут должности ДИ1 пустой, то в ДИ пишем, что не заполнен атрибут № 330453 объекта "Должность "
+         g_ooutfile.OutputLnF("\t не заполнен атрибут № 330453 объекта \"Должность \" ","Regular"); 
+    }
 
-    g_ooutfile.OutputLnF("\n Глава 4\nОТВЕТСТВЕННОСТЬ","RegularCenter");
-    g_ooutfile.OutputLnF("\tВ рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" несет ответственность за:","Regular");
 //подписи на ДИ 
-    g_ooutfile.BeginTable (100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+/*    g_ooutfile.BeginTable (100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
     g_ooutfile.TableRow(); 
     g_ooutfile.TableCell ( "РУКОВОДИТЕЛЬ СП",34,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,0);
     g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
@@ -100,11 +139,11 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     g_ooutfile.TableCellF ( "(должность)",34,"TableCellF9");
     g_ooutfile.TableCellF ( "(подпись) ", 33,"TableCellF9");
     g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
-    g_ooutfile.EndTable("podpis", 100, "Arial", 0, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
+    g_ooutfile.EndTable("", 100, "Arial", 1, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
     g_ooutfile.OutputLnF("___________","Regular");
-    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
+    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");*/
 //Виза работника службы управления человеческими ресурсами
-    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+/*    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
     g_ooutfile.TableRow(); 
     g_ooutfile.TableCellF ( "Виза работника службы управления человеческими ресурсами\n",34,"Regular");
     g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
@@ -115,9 +154,9 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
     g_ooutfile.EndTable(" ", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
     g_ooutfile.OutputLnF("___________","Regular");
-    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
+    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");*/
 //Виза работника юридической службы    
-    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+/*    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
     g_ooutfile.TableRow(); 
     g_ooutfile.TableCellF ( "Виза работника юридической службы\n",34,"Regular");
     g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
@@ -128,22 +167,9 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
     g_ooutfile.EndTable(" ", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
     g_ooutfile.OutputLnF("___________","Regular");
-    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
-//Виза работника юридической службы    
-    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
-    g_ooutfile.TableRow(); 
-    g_ooutfile.TableCellF ( "Виза работника юридической службы\n",34,"Regular");
-    g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
-    g_ooutfile.TableCell ( " ", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
-    g_ooutfile.TableRow(); 
-    g_ooutfile.TableCellF ( "(должность)",34,"TableCellF9");
-    g_ooutfile.TableCellF ( "(подпись) ", 33,"TableCellF9");
-    g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
-    g_ooutfile.EndTable(" ", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
-    g_ooutfile.OutputLnF("___________","Regular");
-    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
+    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");*/
 //С Инструкцией ознакомлен, согласен, один экземпляр получил:
-    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+/*    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
     g_ooutfile.TableRow(); 
     g_ooutfile.TableCellF ( "С Инструкцией ознакомлен, согласен, один экземпляр получил:\n",34,"Regular");
     g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
@@ -155,7 +181,7 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     g_ooutfile.EndTable(" ", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
     g_ooutfile.OutputLnF("___________","Regular");
     g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
-
+*/
     g_ooutfile.EndSection(); 
     g_ooutfile.WriteReport();
     totalfilecount++;
