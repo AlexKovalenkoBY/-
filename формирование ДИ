@@ -47,6 +47,8 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     // Форматы строк для формирования отчета (стили) 
     g_ooutfile.DefineF("Title 1", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_LEFT,95,0,0,0,0,1);      
     g_ooutfile.DefineF("Regular","Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_JUSTIFY, 0, 0, 0, 0, 0, 1);
+    g_ooutfile.DefineF("Regular9","Times New Roman",9,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_JUSTIFY, 0, 0, 0, 0, 0, 1);
+    g_ooutfile.DefineF("TableCellF9","Times New Roman",9,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_CENTER, 0, 0, 0, 0, 0, 1);
     g_ooutfile.DefineF("RegularCenter","Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_CENTER, 0, 0, 0, 0, 0, 1);
     g_ooutfile.DefineF("Header", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_LEFT | Constants.FMT_BOLD,0,0,0,0,0,1);
     g_ooutfile.DefineF("Table", "Times New Roman",14,Constants.C_BLACK,Constants.C_TRANSPARENT,Constants.FMT_LEFT,1,1,0,0,0,1);
@@ -59,10 +61,10 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
     g_ooutfile.TableRow(); 
     // TableCellF ( double p_dValue, int rowSpan, int colSpan, String p_sStyleSheetName )
-    g_ooutfile.TableCell ( "ОАО \" Белагропромбанк\"",50,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_CENTER,0);
-    g_ooutfile.TableCell ( "УТВЕРЖДАЮ \n руководитель структурного подразделения \n _____________________ ФИО \n «___»________________201     г.", 50,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_CENTER,0);
+    g_ooutfile.TableCell ( "ОАО \" Белагропромбанк\"",50,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,0);
+    g_ooutfile.TableCell ( "УТВЕРЖДАЮ \n руководитель структурного подразделения \n _____________________ ФИО \n «___»________________201     г.", 50,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
     g_ooutfile.EndTable("", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
-    g_ooutfile.EndHeader(); //Footer File.BeginFooter(); File.BeginTable(100, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_CENTER, 0); File.TableRow(); File.TableCell("Content table footer", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_CENTER | Constants.FMT_VCENTER, 0); File.EndTable("Test", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); File.EndFooter(); //Sets the autonumbering on File.SetAutoTOCNumbering(true); //Defines the style for the four levels in the TOC File.SetTOCFormat(0, "Arial", 20, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_BOLD | Constants.FMT_ITALIC, 0, 0, 0, 0); File.SetTOCFormat(1, "Arial", 16, Constants.C_GREEN, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_BOLD, 5, 5, 2, 2); File.SetTOCFormat(2, "Arial", 12, Constants.C_RED, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_ITALIC, 10 , 5, 2, 2); File.SetTOCFormat(3, "Arial", 10, Constants.C_BLUE, Constants.C_WHITE, Constants.FMT_LEFT, 15, 5, 2, 2); //Output text File.OutputLn("Table_of_Contents", "Arial", 30, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT, 0); //Adds the table of content File.OutputField(Constants.FIELD_TOC, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT); 
+    //g_ooutfile.EndHeader(); //Footer File.BeginFooter(); File.BeginTable(100, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_CENTER, 0); File.TableRow(); File.TableCell("Content table footer", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_CENTER | Constants.FMT_VCENTER, 0); File.EndTable("Test", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); File.EndFooter(); //Sets the autonumbering on File.SetAutoTOCNumbering(true); //Defines the style for the four levels in the TOC File.SetTOCFormat(0, "Arial", 20, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_BOLD | Constants.FMT_ITALIC, 0, 0, 0, 0); File.SetTOCFormat(1, "Arial", 16, Constants.C_GREEN, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_BOLD, 5, 5, 2, 2); File.SetTOCFormat(2, "Arial", 12, Constants.C_RED, Constants.C_WHITE, Constants.FMT_LEFT | Constants.FMT_ITALIC, 10 , 5, 2, 2); File.SetTOCFormat(3, "Arial", 10, Constants.C_BLUE, Constants.C_WHITE, Constants.FMT_LEFT, 15, 5, 2, 2); //Output text File.OutputLn("Table_of_Contents", "Arial", 30, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT, 0); //Adds the table of content File.OutputField(Constants.FIELD_TOC, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, Constants.FMT_LEFT); 
    // g_ooutfile.EndSection(); 
    //g_ooutfile.BeginSection(297, 210, 10, 10, 30, 10, 10, 10, false, Constants.SECTION_DEFAULT); //Header File.BeginHeader(); 
     g_ooutfile.OutputLnF(" ДОЛЖНОСТНАЯ ИНСТРУКЦИЯ \n ______________№ _____ \n г.Минск \n","Regular");
@@ -72,18 +74,11 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     //ВОТ ТУТ НАДО ВСТАВИТЬ ГЛАВУ 1 
     //ГЛАВА2 - ОБЯЗАННОСТИ - ФОРМИРУЕМ НА ОСНОВАНИИ ИМЕЮЩЕГОСЯ МАССИВА 
         g_ooutfile.OutputLnF("\n Глава 2\nДОЛЖНОСТНЫЕ ОБЯЗАННОСТИ","RegularCenter");
-    g_ooutfile.OutputLnF("В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+" сотрудник выполняет следующие функции:","Regular");
-   g_ooutfilepos = Context.createOutputObject(Constants.OUTTEXT, DolgnList[i]+"err.txt");
- /*   for (j=0; j<di_elements.length;j++){
-    //g_ooutfile.OutputLnF(1+j+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";"+di_elements[j].position.Name(g_nLoc),"Regular");
-    if (di_elements[j].position.Name(g_nLoc)=="Начальник Управления кассовых операций") {
-    Dialogs.MsgBox(j)}
-    }*/
-    g_ooutfilepos.WriteReport();
+    g_ooutfile.OutputLnF("\tВ рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+" сотрудник выполняет следующие функции:","Regular");
     var count =1;
     for (j=161; j<di_elements.length;j++){
 //        if (di_elements[j].position.Name(g_nLoc)==DolgnList[i]) {
-        if (di_elements[j].position.Name(g_nLoc).indexOf(DolgnList[i])>=0) {   // pathStr.indexOf("\Н_",0)>0
+        if (di_elements[j].position.Name(g_nLoc).indexOf(DolgnList[i])>-1) {   // pathStr.indexOf("\Н_",0)>0
           //  if (di_elements[j].func.ObjDef().Name(g_nLoc)==""){Dialogs.MsgBox(j)}
         g_ooutfile.OutputLnF(count+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";","Regular");
         count++;
@@ -91,10 +86,75 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     }
     //КОНЕЦ ФОРМИРОВАНИЯ ГЛАВЫ 2
     g_ooutfile.OutputLnF("\n Глава 3\nПРАВА","RegularCenter");
-    g_ooutfile.OutputLnF("В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" имеет право:","Regular");
+    g_ooutfile.OutputLnF("\tВ рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" имеет право:","Regular");
 
     g_ooutfile.OutputLnF("\n Глава 4\nОТВЕТСТВЕННОСТЬ","RegularCenter");
-    g_ooutfile.OutputLnF("В рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" несет ответственность за:","Regular");
+    g_ooutfile.OutputLnF("\tВ рамках функционирования бизнес-процесса "+ogroups[0].Name(g_nLoc)+ DolgnList[i]+" несет ответственность за:","Regular");
+//подписи на ДИ 
+    g_ooutfile.BeginTable (100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCell ( "РУКОВОДИТЕЛЬ СП",34,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,0);
+    g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableCell ( "ИО Фамилия ", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "(должность)",34,"TableCellF9");
+    g_ooutfile.TableCellF ( "(подпись) ", 33,"TableCellF9");
+    g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
+    g_ooutfile.EndTable("podpis", 100, "Arial", 0, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
+    g_ooutfile.OutputLnF("___________","Regular");
+    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
+//Виза работника службы управления человеческими ресурсами
+    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "Виза работника службы управления человеческими ресурсами\n",34,"Regular");
+    g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableCell ( " ", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "(должность)",34,"TableCellF9");
+    g_ooutfile.TableCellF ( "(подпись) ", 33,"TableCellF9");
+    g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
+    g_ooutfile.EndTable(" ", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
+    g_ooutfile.OutputLnF("___________","Regular");
+    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
+//Виза работника юридической службы    
+    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "Виза работника юридической службы\n",34,"Regular");
+    g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableCell ( " ", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "(должность)",34,"TableCellF9");
+    g_ooutfile.TableCellF ( "(подпись) ", 33,"TableCellF9");
+    g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
+    g_ooutfile.EndTable(" ", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
+    g_ooutfile.OutputLnF("___________","Regular");
+    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
+//Виза работника юридической службы    
+    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "Виза работника юридической службы\n",34,"Regular");
+    g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableCell ( " ", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "(должность)",34,"TableCellF9");
+    g_ooutfile.TableCellF ( "(подпись) ", 33,"TableCellF9");
+    g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
+    g_ooutfile.EndTable(" ", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
+    g_ooutfile.OutputLnF("___________","Regular");
+    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
+//С Инструкцией ознакомлен, согласен, один экземпляр получил:
+    g_ooutfile.BeginTable ( 100, colWidthList,  Constants.C_WHITE,  Constants.C_WHITE, Constants.FMT_LEFT, 0);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "С Инструкцией ознакомлен, согласен, один экземпляр получил:\n",34,"Regular");
+    g_ooutfile.TableCell ( "", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableCell ( " ", 33,"Times New Roman",14,Constants.C_RED,Constants.C_WHITE,0,Constants.FMT_LEFT,10);
+    g_ooutfile.TableRow(); 
+    g_ooutfile.TableCellF ( "(должность)",34,"TableCellF9");
+    g_ooutfile.TableCellF ( "(подпись) ", 33,"TableCellF9");
+    g_ooutfile.TableCellF ( "(расшифровка подписи) ", 33,"TableCellF9");
+    g_ooutfile.EndTable(" ", 100, "Arial", 10, Constants.C_BLACK, Constants.C_WHITE, 0, Constants.FMT_LEFT, 0); 
+    g_ooutfile.OutputLnF("___________","Regular");
+    g_ooutfile.OutputLnF(" (дата) \n\n\n","Regular9");
 
     g_ooutfile.EndSection(); 
     g_ooutfile.WriteReport();
