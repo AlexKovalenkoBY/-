@@ -1,0 +1,71 @@
+/* 
+ГРУЗИТ ИЗ ТЕКСТОВОГО ФАЙЛА СПИКО сп БАНКА И ВЫГРУЖАЕТ В ФАЙЛ ТОЛЬКО ДЕЙСТВУЮЩИЕ СП
+*/
+var g_nLoc = Context.getSelectedLanguage();
+var PublicInterface = undefined;
+var PublicInterfaceOutput = undefined;
+main();
+function main(){
+    PublicInterface = JavaImporter(
+        java.io.FileInputStream,
+        java.io.StringWriter,
+        org.apache.commons.io.IOUtils,
+        java.io.StringWriter
+    );
+  PublicInterfaceOutput = JavaImporter(
+        java.io.File,
+        java.io.BufferedWriter,
+        java.io.FileWriter,
+        org.apache.commons.io.IOUtils,
+        java.io.StringWriter
+    );
+    var selected_group = ArisData.getSelectedGroups()[0];  
+    var file_path = "D:\\org\\apbstr.000.txt"; //исходный файл с СП
+     var writer = new PublicInterface.StringWriter();
+    PublicInterface.IOUtils.copy(new PublicInterface.FileInputStream(file_path), writer, "UTF-8");  //UTF-8
+    var csvData = writer.toString();
+    writer.close();
+    var str1array = csvData.split("\n");
+        var oneStr_array=[];
+        var total_array=[];
+    var fileout = new PublicInterfaceOutput.File("d:\\newfile.txt");
+    var writerOut = new PublicInterfaceOutput.BufferedWriter(new PublicInterfaceOutput.FileWriter(fileout));
+  
+    for (var i=0; i<str1array.length;i++){
+        oneStr_array=str1array[i].split("|");
+           if (!oneStr_array[20]=="") //если в 20 поле (дата закрытия) пусто, то строку из файла оставляем, иначе удаляем из рассомотрения
+               {oneStr_array=[];}    
+           else  {writerOut.write(str1array[i]);
+           total_array.push(oneStr_array);}
+            }
+            //ObjDefList ( boolean bRecursive, int[] objTypeNums )
+var  statGroup_oobjdef       = ArisData.getActiveDatabase().FindGUID("fe5b2530-d375-11e7-1e27-0017a4772806");
+//var new_my_Group = selected_group.CreateChildGroup ("Оргструктура 2.0", g_nLoc);
+var totaldefslist = selected_group.ObjDefList(true, [Constants.OT_ORG_UNIT,Constants.OT_LOC] ); //Constants.OT_POS = Должность;OT_ORG_UNIT=Организационная единица
+ /* данный кусок кода выгрузил все имена объектов по типам в файл с разделителями для последующего анализа. можно удалить 
+ 
+ var File = Context.createOutputObject();
+ for (var i=0;i<totaldefslist.length; i++){
+    File.OutputLn(totaldefslist[i].Name(g_nLoc)+";"+totaldefslist[i].Group().Name(g_nLoc)+";"+totaldefslist[i].Type(),"Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_BOLD | Constants.FMT_ITALIC,0);
+}
+    File.WriteReport();*/
+    
+ // var OrgSrtuc =   selected_base.FindGUID ( "fe5b2530-d375-11e7-1e27-0017a4772806", Constants.CID_GROUP) ;
+ 
+ var s=0;
+ //   Dialogs.MsgBox(csvData);
+   writerOut.close()
+}
+
+/*
+ObjDef.ChangeGroup ( Group newGroup )
+Report class Attr - Method setValue =setValue ( String p_sValue )
+
+//Constants.OT_POS = Должность; ST_POS, ST_POS_1
+//OT_ORG_UNIT = Организационная единица
+//OT_SYS_ORG_UNIT = Системная организационная единица
+//OT_LOC = Местоположение
+ТИП должности = ST_POS_TYPE, ST_POS_TYPE1,
+
+Тип модели Организационная схема = MT_ORG_CHRT
+*/
