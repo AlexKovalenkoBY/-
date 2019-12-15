@@ -44,13 +44,14 @@ var  statGroup_oobjdef       = ArisData.getActiveDatabase().FindGUID("fe5b2530-d
 var totaldefslist = selected_group.ObjDefList(true, [Constants.OT_ORG_UNIT] ); //Constants.OT_POS = Должность;OT_ORG_UNIT=Организационная единица
  // данный кусок кода выгрузил все имена объектов по типам в файл с разделителями для последующего анализа. можно удалить 
  var File = Context.createOutputObject();
-    for (var j=0;j<totaldefslist.length;j++){
+  for (var j=0;j<totaldefslist.length;j++){
      for (var i=0;i<total_array.length;i++){
       var found = false;
-      if ((total_array[i][3].indexOf(totaldefslist[j].Attribute(Constants.AT_NAME,g_nLoc).GetValue(true))>-1 )||(total_array[i][3].indexOf(totaldefslist[j].Attribute(Constants.AT_DESC,g_nLoc).GetValue(true))>-1 )&&(total_array[i][2].split(",")[total_array[i][2].split(",").length-1]="Центр сопровождения банковских операций")){
+      if ((total_array[i][3]==totaldefslist[j].Attribute(Constants.AT_NAME,g_nLoc).GetValue(true) )||(total_array[i][3]==totaldefslist[j].Attribute(Constants.AT_DESC,g_nLoc).GetValue(true))&&(total_array[i][2].indexOf("Центр сопровождения банковских операций")>0)){
         found = true;
         var newparent = total_array[i][16].toString();
         totaldefslist[j].Attribute("133845",g_nLoc).setValue(newparent);
+        totaldefslist[j].Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).setValue(total_array[i][1].toString());
         File.OutputLn(totaldefslist[j].Name(g_nLoc)+" установлен атрибут КОД РОДИТЕЛЬСКОГО СП + "+totaldefslist[j].Attribute("133845",g_nLoc).GetValue(false)+";"+total_array[i][3],"Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_BOLD | Constants.FMT_ITALIC,0);
 
 //            totaldefslist[i].Group().Parent().Name(g_nLoc)+"\\"+totaldefslist[i].Group().Name(g_nLoc)+";"+totaldefslist[i].Type(),"Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_BOLD | Constants.FMT_ITALIC,0);
@@ -61,10 +62,11 @@ var totaldefslist = selected_group.ObjDefList(true, [Constants.OT_ORG_UNIT] ); /
      */
        }//for i = 
      }//for j=0
-
-/* for (var i=0;i<totaldefslist.length; i++){
-    File.OutputLn(totaldefslist[i].Name(g_nLoc)+";"+totaldefslist[i].Group().Parent().Name(g_nLoc)+"\\"+totaldefslist[i].Group().Name(g_nLoc)+";"+totaldefslist[i].Type(),"Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_BOLD | Constants.FMT_ITALIC,0);
-}*/
+ File.OutputLn("ИЗМЕНЕННЫЕ ОБЪЕКТЫ:","Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_BOLD | Constants.FMT_ITALIC,0);
+ for (var i=0;i<totaldefslist.length; i++){
+//    File.OutputLn(totaldefslist[i].Name(g_nLoc)+";"+totaldefslist[i].Group().Parent().Name(g_nLoc)+"\\"+totaldefslist[i].Group().Name(g_nLoc)+";"+totaldefslist[i].Type(),"Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_BOLD | Constants.FMT_ITALIC,0);
+  File.OutputLn(totaldefslist[i].Name(g_nLoc)+";"+totaldefslist[i].Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(true)+";"+totaldefslist[i].Attribute("133845",g_nLoc).GetValue(true),"Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_BOLD | Constants.FMT_ITALIC,0);
+}
     File.WriteReport();
     
  // var OrgSrtuc =   selected_base.FindGUID ( "fe5b2530-d375-11e7-1e27-0017a4772806", Constants.CID_GROUP) ;
