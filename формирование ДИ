@@ -87,7 +87,8 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     for (j=0; j<di_elements.length;j++){
 //        if (di_elements[j].position.Name(g_nLoc)==DolgnList[i]) {
         if (di_elements[j].position.Name(g_nLoc).indexOf(DolgnList[i].Name(g_nLoc))>-1) {   // pathStr.indexOf("\Н_",0)>0
-        g_ooutfile.OutputLnF("\t"+totalcontDI+"."+count+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";","Regular");
+//!!!!!!Добавить проверку на повторение функций в ДИ.!!!!
+            g_ooutfile.OutputLnF("\t"+totalcontDI+"."+count+". "+di_elements[j].func.ObjDef().Name(g_nLoc)+";","Regular");
         count++;
   //      totalcontDI++;
         }
@@ -161,7 +162,7 @@ for (var i=0;i<list_alltypeFaceOccs.length;i++){ //тип лица
     } // for (var i=0;i<1;i++){ //DolgnList.length;i++){ временно формируем  только 1 документ
      Dialogs.MsgBox("По бизнес-процессу "+ogroups[0].Name(g_nLoc)+" в каталоге "+Context.getSelectedPath()+" сформировано "+totalfilecount+" файлов ДИ");
      outfilereport.OutputLn("По бизнес-процессу "+ogroups[0].Name(g_nLoc)+" в каталоге "+Context.getSelectedPath()+" сформировано "+totalfilecount+" файлов ДИ","Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);
-     outfilereport.OutputLn("данный файл формируется только для того, чтобы сохранились все остльные документы","Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);
+ //    outfilereport.OutputLn("данный файл формируется только для того, чтобы сохранились все остльные документы","Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);
      
      outfilereport.WriteReport(Context.getSelectedPath(), Context.getSelectedFile()); //закрыли контекстный файл           
         }//
