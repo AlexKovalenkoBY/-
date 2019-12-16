@@ -28,21 +28,46 @@ function main(){
     var str1array = csvData.split("\n");
         var oneStr_array=[];
         var total_array=[];
-    var fileout = new PublicInterfaceOutput.File("d:\\newfile.txt");
+    var fileout = new PublicInterfaceOutput.File("d:\\1newfile.txt");
     var writerOut = new PublicInterfaceOutput.BufferedWriter(new PublicInterfaceOutput.FileWriter(fileout));
   
     for (var i=0; i<str1array.length;i++){
         oneStr_array=str1array[i].split("|");
            if (!oneStr_array[20]=="") //если в 20 поле (дата закрытия) пусто, то строку из файла оставляем, иначе удаляем из рассомотрения
                {oneStr_array=[];}    
-           else  {writerOut.write(str1array[i]);
+           else  {
+               //writerOut.write(str1array[i]);
            total_array.push(oneStr_array);}
             }
             //ObjDefList ( boolean bRecursive, int[] objTypeNums )
-var  statGroup_oobjdef       = ArisData.getActiveDatabase().FindGUID("fe5b2530-d375-11e7-1e27-0017a4772806");
-//var new_my_Group = selected_group.CreateChildGroup ("Оргструктура 2.0", g_nLoc);
+//var  statGroup_oobjdef       = ArisData.getActiveDatabase().FindGUID("bc1aa60b-8668-11e2-7179-080027cef185");
+//var new_my_Group = statGroup_oobjdef.CreateChildGroup ("Оргструктура 2.0", g_nLoc);
+// var newGroup = new_my_Group.CreateChildGroup("Центр сопровождения банковских операций", g_nLoc);
+
+//var new_my_Group = ArisData.getActiveDatabase().FindGUID("c59bad61-1fe4-11ea-6ba3-364b50b7ef2d"); //выбрали группу "Центр сопровождения банковских операций"
+ChildExistCheck = []; //массив, в котором содержатся только уникальные коды родительских СП. этот массив будет исрользоваться для того, чтобы проверять на наличие чилдов
+for (var i=0; i<total_array.length;i++){
+var temp = total_array[i][16];
+if (!temp=="") {ChildExistCheck.push(temp)}
+}
+ChildExistCheck=ArisData.Unique(ChildExistCheck);
+ChildExistCheck=ChildExistCheck.sort();
+/*
+for (var i=0;i<ChildExistCheck.length;i++){
+writerOut.write(ChildExistCheck[i]+"\n");
+}
+writerOut.close()
+*/
+var new_my_Group = ArisData.getActiveDatabase().FindGUID("c58df1c1-1fe4-11ea-6ba3-364b50b7ef2d"); //выбрали группу "Оргструктура 2.0"
+var inGroupModelList =  new_my_Group.Childs ( false);
+    for (var i=0;i<inGroupModelList.length;i++){
+        if (inGroupModelList[i].Name(g_nLoc) == "Центр сопровождения банковских операций"){
+        
+        new_my_Group.Delete(inGroupModelList[i]);
+        }
+    }
 var totaldefslist = selected_group.ObjDefList(true, [Constants.OT_ORG_UNIT] ); //Constants.OT_POS = Должность;OT_ORG_UNIT=Организационная единица
-//var newGroup = statGroup_oobjdef.CreateChildGroup("Центр сопровождения банковских операций", g_nLoc);
+
 for (var i=0;i<totaldefslist.length;i++){ //выбрали стартовый объект
 if (totaldefslist[i].Name(g_nLoc)=="Центр сопровождения банковских операций"){var firstObj = totaldefslist[i] }
 }
@@ -51,34 +76,79 @@ if (totaldefslist[i].Name(g_nLoc)=="Центр сопровождения бан
       
  // var OrgSrtuc =   selected_base.FindGUID ( "fe5b2530-d375-11e7-1e27-0017a4772806", Constants.CID_GROUP) ;
  //создан массив объектов, подчиненных главному (без рекурсии). надо пробовать рисовать модель. 
+var newGroup = new_my_Group.CreateChildGroup(struct_element_class.name, g_nLoc); //создаем новыую группу для ЦСБО
+   var new_model = newGroup.CreateModel(Constants.MT_ORG_CHRT, struct_element_class.name,g_nLoc); //создали новую модель в той же папке
+//createObjOcc ( int SymbolNum, ObjDef objDef, int X, int Y, boolean bCreateAttrPlacements, boolean bApplyDefaults )   
+   var HeadObjOcc = new_model.createObjOcc(Constants.ST_ORG_UNIT_1, struct_element_class.aris_obj_def,2500, 200, true,true); //создали головной объект на новой модели в точке 200, 200
+  // HeadObj.SetPosition( 800, 100);
+      // drawFromParent2Child (new_model,  hierarchi_class_obj,HeadObj,200);
+    new_model.ApplyTemplate();
+    new_model.setAttrOccHandling(Constants.ATTROCCHANDLING_BREAKATTR);
+    
+    
  var s=0;
  //   Dialogs.MsgBox(csvData);
-   writerOut.close()
+  
 }
 function init_struct_element_class(){
-   var struct_element_class = function(orgUnit,totaldefslist,position ){
-           this.firstOrgUnit = orgUnit; //ТИП ЛИЦА
-//           this.func = func;  //ФУНКЦИЯ
-           this.position = position; //ДОЛЖНОСТЬ 
-          // this.subprocess = type_face.Model();
+    var  init_child_class = function(childObjDef){
+       this.childObj=childObjDef;
+       this.childexist = this.get_Child();
+    //   this.chekListArray = chekList;
+    }
+     var child_proto = init_child_class.prototype;
+ 
+  child_proto.get_Child = function(){
+    var ChildElement = this.childObj;
+    var child_num_sp = ChildElement.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(false);
+    var all_elements = this.chekListArray;
+    var child_exist = false;
+       for (var i=0;i<ChildExistCheck.length;i++){
+           //проверяем, сожержится ли в массиве родителей указанный номер подразделения
+            if (child_num_sp.indexOf(ChildExistCheck[i])>-1) {
+               child_exist = true;
+               break; 
+            }
+        }    
+   // childs.push(all_elements[i]);
+   
+    return child_exist;
+   };
+   var struct_element_class = function(orgUnit,totaldefslist,position ){ //totaldefslist массив всех ObjDef, из которых будет формироваться стр-ра
+           this.aris_obj_def = orgUnit; //ObjDef Для первого объекта структуры
+           this.position = position; //уровень вложенности на будущее
            this.sp_array =  totaldefslist
            this.childs = this.get_Childs();
+           this.name = this.MyName();
+      //   this.symbolNum = this.symbolNum();
+      //   this.func = func;  //ФУНКЦИЯ
+      // this.subprocess = type_face.Model();
    }
    //proto is short for prototype
    var proto = struct_element_class.prototype;
    proto.get_Funcss = function(){};
-   proto.get_Childs = function(){
-    var childs = [];
-    var firstElement = this.firstOrgUnit;
+   proto.symbolNum = function(){
+       var temp= this.aris_obj_def;
+    return temp.ObjOcc.SymbolNum()
+   }
+    proto.get_Childs = function(){
+    var childs = new Array();
+    var firstElement = this.aris_obj_def;
     var all_elements = this.sp_array;
     for (var i=0;i<all_elements.length;i++) {
- //   if (all_elements[i].Attribute("133845",g_nLoc)==firstElement.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc)){
-    if (all_elements[i].Attribute("133845",g_nLoc).GetValue(false) == firstElement.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(false)){
-    childs.push(all_elements[i]);
-    }
+ //   if (all_elements[i].Attribute("199381",g_nLoc)==firstElement.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc)){
+        if (all_elements[i].Attribute("133845",g_nLoc).GetValue(false) == firstElement.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(false)){
+        
+        childs.push(new init_child_class (all_elements[i], ChildExistCheck));
+        
+        }
     }
     return childs;
    };
+   proto.MyName = function(){
+    return this.aris_obj_def.Name(g_nLoc)
+   }
+
   
    return struct_element_class;
 }
