@@ -78,14 +78,18 @@ if (totaldefslist[i].Name(g_nLoc)=="Центр сопровождения бан
  //создан массив объектов, подчиненных главному (без рекурсии). надо пробовать рисовать модель. 
 var newGroup = new_my_Group.CreateChildGroup(struct_element_class.name, g_nLoc); //создаем новыую группу для ЦСБО
    var new_model = newGroup.CreateModel(Constants.MT_ORG_CHRT, struct_element_class.name,g_nLoc); //создали новую модель в той же папке
-//createObjOcc ( int SymbolNum, ObjDef objDef, int X, int Y, boolean bCreateAttrPlacements, boolean bApplyDefaults )   
-   var HeadObjOcc = new_model.createObjOcc(Constants.ST_ORG_UNIT_1, struct_element_class.aris_obj_def,2500, 200, true,true); //создали головной объект на новой модели в точке 200, 200
+drawStructElementInModel(struct_element_class,new_model);
+   //createObjOcc ( int SymbolNum, ObjDef objDef, int X, int Y, boolean bCreateAttrPlacements, boolean bApplyDefaults )   
+  // var HeadObjOcc = new_model.createObjOcc(Constants.ST_ORG_UNIT_1, struct_element_class.aris_obj_def,2500, 200, true,true); //создали головной объект на новой модели в точке 200, 200
   // HeadObj.SetPosition( 800, 100);
       // drawFromParent2Child (new_model,  hierarchi_class_obj,HeadObj,200);
-    new_model.ApplyTemplate();
-    new_model.setAttrOccHandling(Constants.ATTROCCHANDLING_BREAKATTR);
+ //   new_model.ApplyTemplate();
+ //   new_model.setAttrOccHandling(Constants.ATTROCCHANDLING_BREAKATTR);
     
-    
+ /* for (var i=0;i<struct_element_class.childs.length;i++){
+      new_model.createObjOcc(Constants.ST_ORG_UNIT_1,struct_element_class.childs[i].childObj ,500+i*500, 450, true,true); //создали головной объект на новой модели в точке 200, 200
+ 
+  }*/  
  var s=0;
  //   Dialogs.MsgBox(csvData);
   
@@ -152,7 +156,36 @@ function init_struct_element_class(){
   
    return struct_element_class;
 }
+function drawStructElementInModel(structElement, model){
+//нарисовали первый элемент aris_obj_def
+var stepX = 500;
+var StepY = 300;
 
+var firstOcc = model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.aris_obj_def,(500+structElement.childs.length*500)/2, 200, true,true); 
+var firstOccX = firstOcc.X();
+var firstOccY = firstOcc.Y();
+
+//draw childs elemenst without heir childrens
+var childsOcc = [];
+for (var i=0;i<structElement.childs.length;i++){
+childsOcc.push(model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[i].childObj,500+i*500, 450, true,true));
+}
+var cxn = [];
+for (var i=0;i<childsOcc.length;i++){ //рисуем связи
+var points = [
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(firstOccX+(firstOcc.Width()/2),firstOccY+firstOcc.Height()), //start point
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(firstOccX+(firstOcc.Width()/2),firstOccY+firstOcc.Height()+150), //down
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(childsOcc[i].X()+(childsOcc[i].Width()/2),firstOccY+firstOcc.Height()+150), //left
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(childsOcc[i].X()+(childsOcc[i].Width()/2),childsOcc[i].Y()) //endpoint
+    ];
+    cxn.push(model.CreateCxnOcc( firstOcc,childsOcc[i], Constants.CT_IS_CRT_BY,points));
+}
+ //model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[i].childObj ,500+i*500, 450, true,true); //создали головной объект на новой модели в точке 200, 200
+
+ 
+model.ApplyTemplate();
+model.setAttrOccHandling(Constants.ATTROCCHANDLING_BREAKATTR);
+}
 /*ObjDef.ChangeGroup ( Group newGroup )
 Report class Attr - Method setValue =setValue ( String p_sValue )
 
