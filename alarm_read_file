@@ -1,84 +1,59 @@
 var g_nLoc = Context.getSelectedLanguage();
-var PublicInterface = undefined;
 main2();
 function main2(){
-    PublicInterface = JavaImporter(
-        java.io.FileInputStream,
-        org.apache.commons.io.IOUtils,
-        java.io.StringWriter
-    );
-  //  var file_path = "D:\\org\\apbstr.000.txt";
-    
-    var writer = new PublicInterface.StringWriter();
-    var myFileStream = new PublicInterface.FileInputStream("D:\\org\\~csbo.txt");
-    PublicInterface.IOUtils.copy(myFileStream, writer, "UTF-8"); 
-    
-    var csvData = writer.toString();    
-    myFileStream.close();
-    
-     var str1array = csvData.split("\n");
-        var oneStr_array=[];
-     var total_array=[]; //глобальный массив всех объектов
-        
-           for (var i=0; i<str1array.length;i++){
-             oneStr_array=str1array[i].split("|");
-           if (!oneStr_array[20]=="") //если в 20 поле (дата закрытия) пусто, то строку из файла оставляем, иначе удаляем из рассомотрения
-               {oneStr_array=[];}    
-           else  {
-               //writerOut.write(str1array[i]);
-           total_array.push(oneStr_array);}
-            }
-       var root = total_array[0][1]     ;
-      file = Context.createOutputObject(Constants.OUTTEXT,"tree_prot.txt");
-       var node_class = new init_Node_class();
-       var root_node = new node_class (root,total_array);
-       root_node.childs= root_node.CreateChilds(root_node);
-       for (var i=0;i<root_node.childs.length;i++){
-       file.OutputLn(root_node.childs[i].node,"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
-       }
-       var s=0;
 
-  file.WriteReport()  ;
+//var  statGroup_oobjdef = ArisData.getActiveDatabase().FindGUID("bc1aa60b-8668-11e2-7179-080027cef185"); //  Организационная структура Банка
+//дома b1fbaa20-1e87-11ea-5815-0a002700000e
+//на работе fe5b2530-d375-11e7-1e27-0017a4772806
+//var new_my_Group = ArisData.getActiveDatabase().FindGUID("b1fbaa20-1e87-11ea-5815-0a002700000e"); //выбрали группу "Оргструктура 2.0"
+                                                        // c58df1c1-1fe4-11ea-6ba3-364b50b7ef2d на работе
+                                                        //b1fbaa20-1e87-11ea-5815-0a002700000e дома
+/*var inGroupModelList =  new_my_Group.Childs ( false);
+    for (var i=0;i<inGroupModelList.length;i++){
+        if (inGroupModelList[i].Name(g_nLoc) == "Центр сопровождения банковских операций"){
+        
+        new_my_Group.Delete(inGroupModelList[i]);
+        }
+    }*/
+ var selected_group = ArisData.getSelectedGroups()[0]; 
+var totaldefslist = selected_group.ObjDefList(true, [Constants.OT_ORG_UNIT] ); //Constants.OT_POS = Должность;OT_ORG_UNIT=Организационная единица
+
+    for (var i=0;i<totaldefslist.length;i++){ //выбрали стартовый объект
+        if (totaldefslist[i].Name(g_nLoc)=="Центр сопровождения банковских операций"){
+            var firstObj = totaldefslist[i] 
+        }
+    }
+     //  var root = total_array[1][1]     ;
+    //  file = Context.createOutputObject(Constants.OUTTEXT,"tree_prot.txt");
+       var node_class = new init_Node_class();
+       var root_node = new node_class (firstObj,totaldefslist);
+       root_node.childs= root_node.CreateChilds(root_node);
+   /*    for (var i=0;i<root_node.childs.length;i++){
+       file.OutputLn(root_node.childs[i].node,"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
+       }*/
+      // var s=0;
+
+ // file.WriteReport()  ;
 }
 
 
 function init_Node_class(){
    
-   var NodeClass = function(element,_myArray ){
+   var NodeClass = function(objDefElement,_myArray ){
     this.myArray = _myArray;
-    this.node = element;
+    this.node = objDefElement;
     this.childs =[];// this.getNext();
 
     }
 
 var proto = NodeClass.prototype ;
-/*
-proto.getNext = function (element){
-var nextnode=null;
-var _childs = [];
-var parent = this.node;
-var notfound = true;
-file.Output(parent+" начало объекта: {[","Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
-for (each in this.myArray){
-    if ((this.myArray[each][16]==parent)&&!(this.myArray[each][1]==parent)) {
-       nextnode = new NodeClass (this.myArray[each][1],this.myArray);
-       file.Output(nextnode.node+": !{ [","Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
-       _childs.push(nextnode)  ;
-       
-       this.getNext(nextnode);
-       file.OutputLn(" ]} закончился чилд","Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
-    }
-}
-       file.OutputLn(" ] закончилось все","Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
-return _childs;
-}
-*/
+
 proto.CreateChilds = function (NODE){
 var node = NODE.node;
 var _childs = [];
 for (var i=0;i<NODE.myArray.length;i++){
-    if (node == NODE.myArray[i][16]) {
-        var _node = new NodeClass(NODE.myArray[i][1],NODE.myArray);
+    if (node.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(false) == NODE.myArray[i].Attribute("133845",g_nLoc).GetValue(false)) {
+        var _node = new NodeClass(NODE.myArray[i],NODE.myArray);
            _childs.push(_node);
            _node.childs = NODE.CreateChilds(_node);
     }
