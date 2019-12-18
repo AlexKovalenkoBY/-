@@ -1,0 +1,3 @@
+var gr = ArisData.getSelectedGroups()[0];
+var GUIDD = gr.GUID();
+var s=0;
