@@ -1,0 +1,117 @@
+var g_nLoc = Context.getSelectedLanguage();
+var PublicInterface = undefined;
+main2();
+function main2(){
+    PublicInterface = JavaImporter(
+        java.io.FileInputStream,
+        org.apache.commons.io.IOUtils,
+        java.io.StringWriter
+    );
+  //  var file_path = "D:\\org\\apbstr.000.txt";
+    
+    var writer = new PublicInterface.StringWriter();
+    var myFileStream = new PublicInterface.FileInputStream("D:\\org\\~csbo.txt");
+    PublicInterface.IOUtils.copy(myFileStream, writer, "UTF-8"); 
+    
+    var csvData = writer.toString();    
+    myFileStream.close();
+    
+     var str1array = csvData.split("\n");
+        var oneStr_array=[];
+     var total_array=[]; //глобальный массив всех объектов
+        
+           for (var i=0; i<str1array.length;i++){
+             oneStr_array=str1array[i].split("|");
+           if (!oneStr_array[20]=="") //если в 20 поле (дата закрытия) пусто, то строку из файла оставляем, иначе удаляем из рассомотрения
+               {oneStr_array=[];}    
+           else  {
+               //writerOut.write(str1array[i]);
+           total_array.push(oneStr_array);}
+            }
+       var root = total_array[0][1]     ;
+       
+       var node_class = new init_Node_class();
+       var root_node = new node_class (root,total_array);
+       var s=0;
+ //      var childs = [[]];
+       /*
+       var arr = ["Яблоко", "Апельсин", "Груша"];
+       arr.forEach(function(item, i, arr) {
+       alert( i + ": " + item + " (массив:" + arr + ")" );
+        });
+       */
+
+       
+ //   Dialogs.MsgBox(total_array);
+    
+}
+
+
+function init_Node_class(){
+   
+   var NodeClass = function(element,_myArray ){
+    this.myArray = _myArray;
+    this.node = element;
+    this.childs =this.getNext();
+
+    }
+
+var proto = NodeClass.prototype ;
+
+proto.getNext = function (element){
+var next=null;
+var _childs = [];
+    var parent = this.node;
+    var notfound = true;
+for (each in this.myArray){
+    if ((this.myArray[each][16]==parent)&&!(this.myArray[each][1]==parent)) {
+       next = new NodeClass (this.myArray[each][16],this.myArray);
+       _childs.push(next)  ;
+//      this.getNext(this.myArray[each][16]);
+    }
+}
+
+return _childs;
+}
+
+/*proto.getChilds = function(){
+var childs = []; 
+ for (arritem in myArray){
+           if (arritem[16] == this.element) {
+              childs[item].push(arritem[16]);
+           }
+       }
+return childs;
+} //proto.getChilds
+*/
+
+return NodeClass;
+}
+
+
+//=========================
+function init_container_class (){
+
+    function container(root,data){
+     this.element = root;
+     this.chlids = [];
+    }
+var proto = tree_class.prototype;
+proto.buildTree = function (){
+    for (var i=0;i<total_array.length;i++){
+    if (total_array[i][16] = this.element) { 
+      this.childs.push(new init_tree(total_array[i][1])) 
+    /*  this.childs.forEach( function buildTree(currentValue){
+        buildTree
+      }
+        
+            
+      )*/
+    } //if
+} //for 
+
+}//proto.getChilds
+
+
+return container;
+}
