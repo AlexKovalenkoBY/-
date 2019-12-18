@@ -1,0 +1,67 @@
+var g_nLoc = Context.getSelectedLanguage();
+main2();
+function main2(){
+
+//var  statGroup_oobjdef = ArisData.getActiveDatabase().FindGUID("bc1aa60b-8668-11e2-7179-080027cef185"); //  Организационная структура Банка
+//дома b1fbaa20-1e87-11ea-5815-0a002700000e
+//на работе fe5b2530-d375-11e7-1e27-0017a4772806
+//var new_my_Group = ArisData.getActiveDatabase().FindGUID("b1fbaa20-1e87-11ea-5815-0a002700000e"); //выбрали группу "Оргструктура 2.0"
+                                                        // c58df1c1-1fe4-11ea-6ba3-364b50b7ef2d на работе
+                                                        //b1fbaa20-1e87-11ea-5815-0a002700000e дома
+/*var inGroupModelList =  new_my_Group.Childs ( false);
+    for (var i=0;i<inGroupModelList.length;i++){
+        if (inGroupModelList[i].Name(g_nLoc) == "Центр сопровождения банковских операций"){
+        
+        new_my_Group.Delete(inGroupModelList[i]);
+        }
+    }*/
+ var selected_group = ArisData.getSelectedGroups()[0]; 
+var totaldefslist = selected_group.ObjDefList(true, [Constants.OT_ORG_UNIT] ); //Constants.OT_POS = Должность;OT_ORG_UNIT=Организационная единица
+
+    for (var i=0;i<totaldefslist.length;i++){ //выбрали стартовый объект
+        if (totaldefslist[i].Name(g_nLoc)=="Центр сопровождения банковских операций"){
+            var firstObj = totaldefslist[i] 
+        }
+    }
+     //  var root = total_array[1][1]     ;
+    //  file = Context.createOutputObject(Constants.OUTTEXT,"tree_prot.txt");
+       var node_class = new init_Node_class();
+       var root_node = new node_class (firstObj,totaldefslist);
+       root_node.childs= root_node.CreateChilds(root_node);
+   /*    for (var i=0;i<root_node.childs.length;i++){
+       file.OutputLn(root_node.childs[i].node,"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
+       }*/
+      // var s=0;
+
+ // file.WriteReport()  ;
+}
+
+
+function init_Node_class(){
+   
+   var NodeClass = function(objDefElement,_myArray ){
+    this.myArray = _myArray;
+    this.node = objDefElement;
+    this.childs =[];// this.getNext();
+
+    }
+
+var proto = NodeClass.prototype ;
+
+proto.CreateChilds = function (NODE){
+var node = NODE.node;
+var _childs = [];
+for (var i=0;i<NODE.myArray.length;i++){
+    if (node.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(false) == NODE.myArray[i].Attribute("133845",g_nLoc).GetValue(false)) {
+        var _node = new NodeClass(NODE.myArray[i],NODE.myArray);
+           _childs.push(_node);
+           _node.childs = NODE.CreateChilds(_node);
+    }
+}
+return  _childs;
+}
+
+return NodeClass;
+}
+
+
