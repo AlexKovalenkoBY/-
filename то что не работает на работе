@@ -2,13 +2,15 @@ var g_nLoc = Context.getSelectedLanguage();
 var PublicInterface = undefined;
 main();
 function main(){
-    PublicInterface = JavaImporter(java.io.FileInputStream,org.apache.commons.io.IOUtils,java.io.StringWriter,java.io.File, java.util);
-    
+    PublicInterface = JavaImporter(java.io.FileInputStream,org.apache.commons.io.IOUtils,java.io.StringWriter,java.io.FileReader, java.util);
+
 //    var file_path = "C:\\tmp\\1.txt";
 //    var filepath = "W:\\INFO\\Справочники\\apbstr.000.txt";
+
+var importFile = getImportFile();
     var filepath = "C:\\temp\\apbstr.000.txt";
    var scanner = new PublicInterface.Scanner(filepath);
-    var myFileStream = new PublicInterface.FileInputStream(filepath);    
+    var myFileStream = new PublicInterface.FileReader(filepath);    
     var writer = new PublicInterface.StringWriter();
 
     PublicInterface.IOUtils.copy(myFileStream, writer, "UTF-8"); 
@@ -16,5 +18,143 @@ function main(){
     var csvData = writer.toString();    
 
     Dialogs.MsgBox(csvData);
-    
+
 }
+function getImportFile() {
+    var sdefname = "";
+    var sdefext = "*.xml!!xml file|*.xml||";
+    var sdefdir = "";
+    var stitle = "Import xml file";
+
+    var aFiles = Dialogs.getFilePath(sdefname, sdefext, sdefdir, stitle, 0);    // Displays a file selection dialog on the client and makes the content of the selected files available in the report
+    if (aFiles != null && aFiles.length > 0) {
+        return aFiles[0];
+    }
+    return null;
+}
+
+/*
+https://www.ariscommunity.com/users/allenventura/2012-02-16-trying-read-external-file-aris-report-script
+
+
+Hello,
+
+I am trying to read an excel file from a network folder.  I am using standard Java DataInputStream to read the file and store the value in a byte array.  How can I declare a variable of type byte array and specify the size of this byte array?
+
+ 
+
+function getBytesFromFile(inputPath, inputFile){
+    var file = new java.io.File(inputPath, inputFile);
+    var bytes = new Array;
+    var dis = new java.io.DataInputStream(new java.io.FileInputStream(file));
+    dis.read(bytes);
+    dis.close();
+    return bytes;
+}
+
+The above code does not return any value.
+
+Standard way in java is to declare the variable like this:
+
+byte bytes[] = new byte[(int)file.length()];
+
+But that doesn't seem possible in ARIS script.
+
+Thanks for any help.
+
+Regards,
+
+Allen 
+Tags: ARIS script ARIS Report 
+20958
+4
+0
+Comments
+by Amol Patil
+Posted on 2012-02-17
+
+Hi Allen,
+
+Hope this helps you
+
+function getBytesFromFile(inputPath, inputFile) {
+    var file = java.io.File(inputPath, inputFile);
+    var fileInputStream = java.io.FileInputStream(file);
+    var byteArrayOutputStream = java.io.ByteArrayOutputStream();
+    while (fileInputStream.available()) {
+        byteArrayOutputStream.write(fileInputStream.read());
+    }
+    var bytes = byteArrayOutputStream.toByteArray();
+    fileInputStream.close();
+byteArrayOutputStream.flush();
+    byteArrayOutputStream.close();
+    return bytes;
+}
+
+Regards,
+
+Amol Patil
+
+by Allen V. Author
+Posted on 2012-02-17
+
+Thank You Amol!  This works perfect!
+
+I was able to come up with my own solution below, but yours seems cleaner.  I ended up looping and reading one byte at a time.  Problem with ARIS script is not being able to define data type and size.
+
+function getBytesFromFile(inputPath, inputFile){
+    // Define file object to store file info
+    var file = new java.io.File(inputPath, inputFile);
+    // Define array to store byte array info for data 
+    var bytes = new Array();
+    // Define data input stream object that we will read
+    var is = new java.io.DataInputStream(new java.io.FileInputStream(file));
+    // Loop to read each byte from file until the end of file
+    for (var index = 0; index < file.length(); index++) {
+        bytes[index] = is.readByte();
+    }
+    return bytes;
+}
+
+Regards,
+
+Allen
+
+by Allen V. Author
+Posted on 2012-02-23
+
+Hello,
+
+ 
+
+After I read the file, I wish to delete it from the network directory.  I thought it would be easy enough to do:
+
+file.delete();
+
+But that does not work in ARIS script.  I even tried just to rename it to some other filename, but that method doesn't seem to work either.
+
+Is this possible to do from within a report script?
+
+Regards,
+
+Allen
+
+by Amol Patil
+Posted on 2012-02-25
+
+Hi Allen,
+
+Try using
+
+Context.deleteFile(filepath);
+
+Make sure you have delete access to that network location.
+
+Thanks,
+
+Amol Patil
+
+
+
+
+*/
