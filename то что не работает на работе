@@ -1,0 +1,20 @@
+var g_nLoc = Context.getSelectedLanguage();
+var PublicInterface = undefined;
+main();
+function main(){
+    PublicInterface = JavaImporter(java.io.FileInputStream,org.apache.commons.io.IOUtils,java.io.StringWriter,java.io.File, java.util);
+    
+//    var file_path = "C:\\tmp\\1.txt";
+//    var filepath = "W:\\INFO\\Справочники\\apbstr.000.txt";
+    var filepath = "C:\\temp\\apbstr.000.txt";
+   var scanner = new PublicInterface.Scanner(filepath);
+    var myFileStream = new PublicInterface.FileInputStream(filepath);    
+    var writer = new PublicInterface.StringWriter();
+
+    PublicInterface.IOUtils.copy(myFileStream, writer, "UTF-8"); 
+        myFileStream.close();
+    var csvData = writer.toString();    
+
+    Dialogs.MsgBox(csvData);
+    
+}
