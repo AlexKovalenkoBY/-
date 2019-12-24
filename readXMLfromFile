@@ -18,3 +18,15 @@ if (importFile != null) {
  var s=0;     
 }// if (xmlReader.isValid()
 }
+function getImportFile() {
+    var sdefname = "";
+    var sdefext = "*.txt!!txt file|*.txt||";
+    var sdefdir = "";
+    var stitle = "Import TXT file";
+
+    var aFiles = Dialogs.getFilePath(sdefname, sdefext, sdefdir, stitle, 0);    // Displays a file selection dialog on the client and makes the content of the selected files available in the report
+    if (aFiles != null && aFiles.length > 0) {
+        return aFiles[0];
+    }
+    return null;
+}
