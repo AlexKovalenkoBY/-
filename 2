@@ -1,0 +1,260 @@
+var g_nLoc = Context.getSelectedLanguage();
+var PublicInterface = undefined;
+main();
+function main(){
+        PublicInterface = JavaImporter(
+        java.io.FileInputStream,
+        org.apache.commons.io.IOUtils,
+        java.io.StringWriter
+    );
+//берем в работу файл с должностями   
+/*var file_pathXML = getString ("TEXT_1");// C:\ARIS\SHAREFLD\SD_workman.xml
+    var InputStream = new PublicInterface.FileInputStream(file_pathXML);
+    var xmlData = PublicInterface.IOUtils.toByteArray(InputStream);
+    var xmlReader = Context.getXMLParser(xmlData);  // Parses the specified XML file and returns an object that provides access to the XML document.
+    if (xmlReader.isValid()) {
+        var xmlRoot = xmlReader.getRootElement();   // Root element of the XML document
+        var xmlEMPLOYEES = xmlRoot.getChild("EMPLOYEES");
+        var xmlEmployee = xmlEMPLOYEES.getChildren("EMPLOYEE");
+        var arrayXML = []; 
+            for (var i=0;i<xmlEmployee.size();i++){
+                 var pos = xmlEmployee.get(i).getChildText("NamePosts");
+                  var idDiv = xmlEmployee.get(i).getChildText("IDDivision") ;
+                 var IDDivTenChar = xmlEmployee.get(i).getChildText("IDDivTenChar") ;
+                if  (!(IDDivTenChar=="NA")) {
+                 arrayXML.push([idDiv,pos,IDDivTenChar]);
+                }
+            }
+*/
+ /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ВНИМАНИЕ
+ДЛЯ КАЖДОГО ЭКЗ бд НЕОБХОДИМО УКАЗАТЬ ПРАВИЛЬНЫЕ guid ГРУПП, УКАЗАННЫХ В ЭТОМ СПИСКЕ
+
+Группа "Подразделения"  = 4fa5ca50-2700-11ea-5815-0a002700000e
+
+Группа "Сотрудники" = 596b9f10-2700-11ea-5815-0a002700000e
+
+Группа "  Организационная структура Банка" = bc1aa60b-8668-11e2-7179-080027cef185
+
+Группа "Оргструктура 2.0"= b1fbaa20-1e87-11ea-5815-0a002700000e
+
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+  
+  var orgstructura_group = ArisData.getActiveDatabase().FindGUID("bc1aa60b-8668-11e2-7179-080027cef185");;  //выбирать следует группу Оргструктура банка
+  var  orgstructura2_0group= ArisData.getActiveDatabase().FindGUID("b1fbaa20-1e87-11ea-5815-0a002700000e");    
+  var  ot_ORG_group= ArisData.getActiveDatabase().FindGUID("4fa5ca50-2700-11ea-5815-0a002700000e");    
+  var  ot_POS_group= ArisData.getActiveDatabase().FindGUID("596b9f10-2700-11ea-5815-0a002700000e");    
+  
+var totaldefslist = orgstructura_group.ObjDefList(true, [Constants.OT_ORG_UNIT] ); //Constants.OT_POS = Должность;OT_ORG_UNIT=Организационная единица
+ 
+  
+ var newObjArray = [];//["","","",""]     ;
+ var id="";
+ var objCode = "";
+ var parentCode = "";
+ var nameObj = "";
+ 
+ for (var i=0;i<totaldefslist.length;i++){
+ id = totaldefslist[i].ObjectID();
+ objCode = totaldefslist[i].Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(true);
+ parentCode = totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).GetValue(true);
+ nameObj = totaldefslist[i].Attribute(Constants.AT_NAME,g_nLoc).GetValue(true);
+ newObjArray.push([id,objCode,parentCode,nameObj,totaldefslist[i]]);
+ }
+ 
+    for (var i=0;i<newObjArray.length;i++){
+        if (newObjArray[i][3]=="Центральный аппарат ОАО \"Белагропромбанк\""){ //Центр сопровождения банковских операций
+            firstObj= newObjArray[i];
+        }
+    }
+       var node_class = new init_Node_class();
+       var root_node = new node_class (firstObj,newObjArray);
+       root_node.childs= root_node.CreateChilds(root_node);
+ drawStructElementInModel(root_node, orgstructura2_0group);
+ // file.WriteReport()  ;
+
+}
+
+
+function init_Node_class(){
+   
+   var NodeClass = function(element,_myArray ){
+    this.myArray = _myArray;
+    this.node = element;
+    this.childs =[];// this.getNext();
+
+    }
+
+var proto = NodeClass.prototype ;
+
+proto.CreateChilds = function (NODE){
+var node = NODE.node;
+var _childs = [];
+for (var i=0;i<NODE.myArray.length;i++){
+    if (node[1] == NODE.myArray[i][2]) {
+        var _node = new NodeClass(NODE.myArray[i],NODE.myArray);
+           _childs.push(_node);
+           _node.childs = NODE.CreateChilds(_node);
+    }
+}
+return  _childs;
+}
+
+return NodeClass;
+}
+
+
+function drawStructElementInModel(structElement, init_Group){
+//нарисовали первый элемент aris_obj_def
+var stepX = 500;
+var StepY = 300;
+var fx=1000;  //начальный X
+var fy=1000; //начальный Y
+var LRstepX=1000; //плечо влево-вправо
+var ofsetRight = 70; //смещение вправо от связи к модели
+var oYstep=700; //шаг по оси Y
+var  myOccWidth = 650 ;
+var myOccHeight  = 500;
+//1. создать группу  с именем главного СП
+var new_my_Group = init_Group.CreateChildGroup (structElement.node[3], g_nLoc);
+//2. присвоить группе аттрибыи "Родительское СП"
+new_my_Group.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node[2]);
+//3. создать модель с именем узла
+var new_my_Model = new_my_Group.CreateModel(Constants.MT_ORG_CHRT, structElement.node[3],g_nLoc); //создали новую модель в той же папке
+    new_my_Model.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node[2]);
+//4. создать рут объект 
+var firstOcc = new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.node[4],fx, fy, true,true); 
+firstOcc.SetSize ( myOccWidth, myOccHeight );
+
+//8. связать детализации с объектами
+structElement.node[4].CreateAssignment(new_my_Model);
+
+var firstOccX = firstOcc.X();
+var firstOccY = firstOcc.Y();
+//5. создать чилдов
+//draw childs elemenst without heir childrens
+var childsOcc = [];
+
+var childcount = structElement.childs.length;
+
+var center = (childcount/3|0)+childcount%3;
+var Left_ = childcount/3|0;
+var Right_ = childcount-center-Left_;
+var occCenter =[];
+var occLeft = [];
+var occRight = []; 
+var childIndex=0;
+var cxn = [];
+
+for (var i=0;i<center;i++){ //рассчиттали координаты Occ для центральной линии
+if (i==0) { occCenter.push([fx+ofsetRight+(firstOcc.Width())/2,fy+2*oYstep])}
+  else {
+      occCenter.push([occCenter[i-1][0],occCenter[i-1][1]+oYstep])
+  }
+  var newOcc_=new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[childIndex].node[4],occCenter[i][0], occCenter[i][1], true,true);
+  newOcc_.SetSize ( myOccWidth, myOccHeight );
+  var newOcc_h = newOcc_.Height();
+  var newOcc_w = newOcc_.Width();
+  childsOcc.push(newOcc_);   
+
+var points = [
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()), //start point
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),newOcc_.Y()+(newOcc_h/2)), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)+ofsetRight,newOcc_.Y()+newOcc_h/2) //right
+             ];
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[childIndex], Constants.CT_IS_CRT_BY,points));
+      childIndex++;
+}
+for (var i=0;i<Left_;i++){ //рассчиттали координаты для левой линии
+if (i==0) { occLeft.push([fx+(firstOcc.Width()/2)+ofsetRight-LRstepX,fy+2*oYstep])}
+  else {
+      occLeft.push([occLeft[i-1][0],occLeft[i-1][1]+oYstep])
+  }
+//childsOcc.push(new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[childIndex].node[4],occLeft[i][0], occLeft[i][1], true,true));   //ИНДЕКС МАССИВА ЧИЛДОВ!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  var newOcc_=new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[childIndex].node[4],occLeft[i][0], occLeft[i][1], true,true);
+  newOcc_.SetSize ( myOccWidth, myOccHeight );
+  var newOcc_h = newOcc_.Height();
+  var newOcc_w = newOcc_.Width();
+    childsOcc.push(newOcc_);   
+
+var points = [
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()), //start point
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()+oYstep), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)-LRstepX,fy+firstOcc.Height()+oYstep), //left
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)-LRstepX,newOcc_.Y()+(newOcc_h/2)), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)-LRstepX+ofsetRight,newOcc_.Y()+(newOcc_h/2)) //right
+               
+             ];
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[childIndex], Constants.CT_IS_CRT_BY,points));
+        childIndex++;
+}
+for (var i=0;i<Right_;i++){ //рассчиттали координаты для правой линии
+if (i==0) { occRight.push([fx+(firstOcc.Width()/2)+LRstepX+ofsetRight,fy+2*oYstep])}
+  else {
+      occRight.push([occRight[i-1][0],occRight[i-1][1]+oYstep])
+  }
+  var newOcc_=new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[childIndex].node[4],occRight[i][0], occRight[i][1], true,true);
+  newOcc_.SetSize ( myOccWidth, myOccHeight );
+  var newOcc_h = newOcc_.Height();
+  var newOcc_w = newOcc_.Width();
+    childsOcc.push(newOcc_);   
+
+var points = [
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()), //start point
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()+oYstep), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)+LRstepX,fy+firstOcc.Height()+oYstep), //left
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)+LRstepX,newOcc_.Y()+(newOcc_h/2)), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)+LRstepX+ofsetRight,newOcc_.Y()+(newOcc_h/2)) //right
+               
+             ];
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[childIndex], Constants.CT_IS_CRT_BY,points));
+        childIndex++;
+}
+//childsOcc.push(new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[childIndex].node[4],occRight[i][0], occRight[i][1], true,true));   //ИНДЕКС МАССИВА ЧИЛДОВ!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//childIndex++;
+
+/*
+for (var i=0;i<structElement.childs.length;i++){
+childsOcc[i].SetSize ( 400, 300 ); //вроде должно быть так 
+}
+*/
+//6. нарисовать связи 
+
+
+
+/* 
+for (var i=0;i<childsOcc.length;i++){ //рисуем связи
+    if (childOcc[i].X()>=firstOccX) { var K=1;} 
+        else { var K=-1;} 
+var points = [
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(firstOccX+(firstOcc.Width()/2),firstOccY+firstOcc.Height()), //start point
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(firstOccX+(firstOcc.Width()/2),firstOccY+firstOcc.Height()+oYstep), //down
+    firstOccX+(firstOcc.Width()/2),firstOccY+firstOcc.Height()+oYstep 
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(childsOcc[i].X()+(childsOcc[i].Width()/2),firstOccY+firstOcc.Height()+150), //left
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(childsOcc[i].X()+(childsOcc[i].Width()/2),childsOcc[i].Y()) //endpoint
+    ];
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[i], Constants.CT_IS_CRT_BY,points));
+}
+
+*/
+//7. повторить для каждого чилда
+//new_my_Model.ApplyTemplate();
+new_my_Model.setAttrOccHandling(Constants.ATTROCCHANDLING_BREAKATTR);
+
+for (var i=0;i<structElement.childs.length;i++){ //рисуем чилдовые медели
+  drawStructElementInModel(structElement.childs[i], new_my_Group);
+  
+
+}
+
+
+
+
+
+
+
+
+ //model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[i].childObj ,500+i*500, 450, true,true); //создали головной объект на новой модели в точке 200, 200
+
+ 
+}
