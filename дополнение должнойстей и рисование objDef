@@ -22,10 +22,11 @@ function main(){
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
   
   var orgstructura_group = ArisData.getActiveDatabase().FindGUID("bc1aa60b-8668-11e2-7179-080027cef185");;  //выбирать следует группу Оргструктура банка
-  var  orgstructura2_0group= ArisData.getActiveDatabase().FindGUID("6db2add1-2325-11ea-1e27-0017a4772806");    
-  var  ot_ORG_group= ArisData.getActiveDatabase().FindGUID("c867adf0-27a0-11ea-1e27-0017a4772806");    
-  var  ot_POS_group= ArisData.getActiveDatabase().FindGUID("d028d910-27a0-11ea-1e27-0017a4772806");    
+  var  orgstructura2_0group= ArisData.getActiveDatabase().FindGUID("b1fbaa20-1e87-11ea-5815-0a002700000e");    
+  var  ot_ORG_group= ArisData.getActiveDatabase().FindGUID("4fa5ca50-2700-11ea-5815-0a002700000e");    
+  var  ot_POS_group= ArisData.getActiveDatabase().FindGUID("596b9f10-2700-11ea-5815-0a002700000e");    
   
+
     //берем в работу файл с должностями   
 
 var file_pathXML = getString ("TEXT_1");// C:\ARIS\SHAREFLD\SD_workman.xml
@@ -68,18 +69,11 @@ var orgStrModelList= orgstructura2_0group.ModelList(true,[Constants.MT_ORG_CHRT]
 for (var i=0;i<orgStrModelList.length;i++){
     var found= false;
     var currModel = orgStrModelList[i];
-    var occToRemove = currModel.ObjOccListFilter (Constants.OT_POS);
-    occToRemove.forEach(function(element){
-    element.Remove();
-    })
-
     // ObjOccListFilter ( String value, int localeId, int typeNum, int attrTypeNum )
     var mainObjOcc = currModel.ObjOccListFilter(currModel.Name(g_nLoc),g_nLoc,Constants.OT_ORG_UNIT,Constants.AT_NAME)[0];
-   if (!mainObjOcc==null) {
     var tempPositionsArray= [];
     var mainObjName = mainObjOcc.ObjDef().Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).getValue();
-
-     for (var j=0;j<arrayXML2.length;j++){
+        for (var j=0;j<arrayXML2.length;j++){
             if (arrayXML2[j][1]==mainObjName) {
                 tempPositionsArray.push(arrayXML2[j])}
         }
@@ -87,7 +81,7 @@ for (var i=0;i<orgStrModelList.length;i++){
     for (var k=0;k<tempPositionsArray.length;k++){
     occInModel.push(currModel.createObjOcc(Constants.ST_POS,tempPositionsArray[k][2],100+400*(k%6), 100+150*(k/6|0), true,true));
     }
-    }
+    
     
 }  //for (var i=0;i<orgStrModelList.length;i++)
 
