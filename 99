@@ -1,0 +1,89 @@
+/*
+выполняет загрузку фала с СП и рисование моделей 
+
+*/
+var g_nLoc = Context.getSelectedLanguage();
+var PublicInterface = undefined;
+main();
+function main(){
+    PublicInterface = JavaImporter(
+        java.io.FileInputStream,
+        org.apache.commons.io.IOUtils,
+        java.io.StringWriter
+    );
+//  var file_path = "D:\\org\\apbstr.000.txt";
+     var file_path = getString ("TEXT_1");// C:\ARIS\SHAREFLD\apbstr.000.txt; исходный файл с СП указывать так
+    var writer = new PublicInterface.StringWriter();
+    var myFileStream = new PublicInterface.FileInputStream(file_path);
+    PublicInterface.IOUtils.copy(myFileStream, writer, "UTF-8"); 
+    
+    var csvData = writer.toString();    
+    myFileStream.close();
+
+     var str1array = csvData.split("\n");
+        var oneStr_array=[];
+     var total_array=[]; //глобальный массив всех объектов
+        
+           for (var i=0; i<str1array.length;i++){
+             oneStr_array=str1array[i].split("|");
+           if (!oneStr_array[20]=="") //если в 20 поле (дата закрытия) пусто, то строку из файла оставляем, иначе удаляем из рассомотрения
+               {oneStr_array=[];}    
+           else  {
+               //writerOut.write(str1array[i]);
+           total_array.push(oneStr_array);}
+            }
+var file_pathXML = getString ("TEXT_2");// C:\ARIS\SHAREFLD\SD_workman.xml
+    var InputStream = new PublicInterface.FileInputStream(file_pathXML);
+    var xmlData = PublicInterface.IOUtils.toByteArray(InputStream);
+    var xmlReader = Context.getXMLParser(xmlData);  // Parses the specified XML file and returns an object that provides access to the XML document.
+    if (xmlReader.isValid()) {
+        var xmlRoot = xmlReader.getRootElement();   // Root element of the XML document
+        var xmlEMPLOYEES = xmlRoot.getChild("EMPLOYEES");
+        var xmlEmployee = xmlEMPLOYEES.getChildren("EMPLOYEE");
+        var arrayXML = []; 
+            for (var i=0;i<xmlEmployee.size();i++){
+                 var pos = xmlEmployee.get(i).getChildText("NamePosts");
+                  var idDiv = xmlEmployee.get(i).getChildText("IDDivision") ;
+                 var IDDivTenChar = xmlEmployee.get(i).getChildText("IDDivTenChar") ;
+                if  (!(IDDivTenChar=="NA")) {
+                 arrayXML.push([idDiv,pos,IDDivTenChar]);
+                }
+            }  
+    }    
+var selected_Group = ArisData.getSelectedGroups()[0];
+//var regionNumber = selected_Group.Attribute(Constants.AT_SRC).getValue() ;
+var regionName = selected_Group.Name(g_nLoc);
+var inGroupModels = selected_Group.ModelList( true, [Constants.MT_ORG_CHRT]);
+for (var i=0;i<inGroupModels.length;i++){
+//inGroupModels[i].Attribute(Constants.AT_SRC).setValue(regionNumber);
+ myOccList= inGroupModels[i].ObjOccListBySymbol([Constants.ST_POS,Constants.ST_POS_TYPE,Constants.ST_ORG_PIC,Constants.ST_ORG_UNIT_2,Constants.ST_ORG_UNIT_1]);
+var regionNum = inGroupModels[i].ObjOccListFilter (regionName, g_nLoc, Constants.OT_ORG_UNIT )[0].ObjDef().Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).getValue().substr(0,7);
+    for (var j=0;j<myOccList.length;j++){
+if ((myOccList[j].SymbolNum()==3) ||(myOccList[j].SymbolNum()==144)) {
+        for ( var k=0;k<total_array.length;k++) {
+          if ((myOccList[j].ObjDef().Name(g_nLoc)==total_array[k][3])&&(total_array[k][2].indexOf(regionName)>-1)){
+              
+          myOccList[j].ObjDef().Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).setValue(total_array[k][1].toString());
+          myOccList[j].ObjDef().Attribute(Constants.AT_SRC,g_nLoc).setValue(total_array[k][16].toString());
+   /*           if (myOccList[j].ObjDef().Name(g_nLoc)==regionName) {
+                var regionNum = myOccList[j].ObjDef().Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).getValue(true).substr(0,6);
+              }*/
+          }
+        }
+    //заполнение атрибутов для должности 
+}
+if (myOccList[j].SymbolNum()==143)  {
+      for ( var k=0;k<arrayXML.length;k++) {
+            //отрезать от десятизначного кода 7 первых символов
+            if  (arrayXML[k][2].substr(0,7)==regionNum ) {
+              if ((myOccList[j].ObjDef().Name(g_nLoc).toLowerCase()==arrayXML[k][1].toLowerCase())){
+              myOccList[j].ObjDef().Attribute(Constants.AT_SRC,g_nLoc).setValue(arrayXML[k][2].toString());  
+              }
+            }
+        }
+}
+    
+    
+    }
+} //for i=..........
+}
