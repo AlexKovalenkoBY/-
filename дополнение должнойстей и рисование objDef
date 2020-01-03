@@ -1,0 +1,97 @@
+var g_nLoc = Context.getSelectedLanguage();
+var PublicInterface = undefined;
+main();
+function main(){
+        PublicInterface = JavaImporter(
+        java.io.FileInputStream,
+        org.apache.commons.io.IOUtils,
+        java.io.StringWriter
+    );
+ /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ВНИМАНИЕ
+ДЛЯ КАЖДОГО ЭКЗ бд НЕОБХОДИМО УКАЗАТЬ ПРАВИЛЬНЫЕ guid ГРУПП, УКАЗАННЫХ В ЭТОМ СПИСКЕ
+
+Группа "Подразделения"  = 4fa5ca50-2700-11ea-5815-0a002700000e
+
+Группа "Сотрудники" = 596b9f10-2700-11ea-5815-0a002700000e
+
+Группа "  Организационная структура Банка" = bc1aa60b-8668-11e2-7179-080027cef185
+
+Группа "Оргструктура 2.0"= b1fbaa20-1e87-11ea-5815-0a002700000e
+
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+  
+  var orgstructura_group = ArisData.getActiveDatabase().FindGUID("bc1aa60b-8668-11e2-7179-080027cef185");;  //выбирать следует группу Оргструктура банка
+  var  orgstructura2_0group= ArisData.getActiveDatabase().FindGUID("6db2add1-2325-11ea-1e27-0017a4772806");    
+  var  ot_ORG_group= ArisData.getActiveDatabase().FindGUID("c867adf0-27a0-11ea-1e27-0017a4772806");    
+  var  ot_POS_group= ArisData.getActiveDatabase().FindGUID("d028d910-27a0-11ea-1e27-0017a4772806");    
+  
+    //берем в работу файл с должностями   
+
+var file_pathXML = getString ("TEXT_1");// C:\ARIS\SHAREFLD\SD_workman.xml
+    var InputStream = new PublicInterface.FileInputStream(file_pathXML);
+    var xmlData = PublicInterface.IOUtils.toByteArray(InputStream);
+    var xmlReader = Context.getXMLParser(xmlData);  // Parses the specified XML file and returns an object that provides access to the XML document.
+    if (xmlReader.isValid()) {
+        var xmlRoot = xmlReader.getRootElement();   // Root element of the XML document
+        var xmlEMPLOYEES = xmlRoot.getChild("EMPLOYEES");
+        var xmlEmployee = xmlEMPLOYEES.getChildren("EMPLOYEE");
+        var arrayXML = []; 
+            for (var i=0;i<xmlEmployee.size();i++){
+                  var pos = xmlEmployee.get(i).getChildText("NamePosts");
+            //      var idDiv = xmlEmployee.get(i).getChildText("IDDivision") ;
+                 var IDDivTenChar = xmlEmployee.get(i).getChildText("IDDivTenChar") ;
+                if  (!(IDDivTenChar=="NA")) {
+                       arrayXML.push([pos,IDDivTenChar]);
+                }
+            }
+    }
+
+for (var i=0;i<arrayXML.length;i++){
+  var  currentObjDef = ot_POS_group.GetOrCreateObjDef(Constants.OT_POS, 2,arrayXML[i][0], g_nLoc);
+   // currentObjDef.Attribute(Constants.AT_SRC,g_nLoc).setValue(total_array[i][16].toString());
+  //  currentObjDef.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).setValue(total_array[i][1].toString());
+    //.Attribute(Constants.AT_SRC,g_nLoc).GetValue(false)
+    
+}
+
+var totalPoslist = orgstructura_group.ObjDefList(true, [Constants.OT_POS] ); //Constants.OT_POS = Должность;OT_ORG_UNIT=Организационная единица 
+var arrayXML2=[];
+for (var i=0;i<arrayXML.length;i++){
+ for (var j=0;j<totalPoslist.length;j++){
+     if (arrayXML[i][0]==totalPoslist[j].Name(g_nLoc)){
+         arrayXML2.push(arrayXML[i].concat(totalPoslist[j]))
+     }
+ }
+}
+var orgStrModelList= orgstructura2_0group.ModelList(true,[Constants.MT_ORG_CHRT]);
+for (var i=0;i<orgStrModelList.length;i++){
+    var found= false;
+    var currModel = orgStrModelList[i];
+    var occToRemove = currModel.ObjOccListFilter (Constants.OT_POS);
+    occToRemove.forEach(function(element){
+    element.Remove();
+    })
+
+    // ObjOccListFilter ( String value, int localeId, int typeNum, int attrTypeNum )
+    var mainObjOcc = currModel.ObjOccListFilter(currModel.Name(g_nLoc),g_nLoc,Constants.OT_ORG_UNIT,Constants.AT_NAME)[0];
+   if (!mainObjOcc==null) {
+    var tempPositionsArray= [];
+    var mainObjName = mainObjOcc.ObjDef().Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).getValue();
+
+     for (var j=0;j<arrayXML2.length;j++){
+            if (arrayXML2[j][1]==mainObjName) {
+                tempPositionsArray.push(arrayXML2[j])}
+        }
+    var occInModel = []
+    for (var k=0;k<tempPositionsArray.length;k++){
+    occInModel.push(currModel.createObjOcc(Constants.ST_POS,tempPositionsArray[k][2],100+400*(k%6), 100+150*(k/6|0), true,true));
+    }
+    }
+    
+}  //for (var i=0;i<orgStrModelList.length;i++)
+
+
+  
+
+}
