@@ -1,0 +1,353 @@
+var g_nLoc = Context.getSelectedLanguage();
+main();
+function main(){
+    var selectedObj = ArisData.getSelectedObjOccs();
+     var File = Context.createExcelWorkbook(Context.getSelectedFile());    
+        var currentSheet = File.createSheet("Case_5"); 
+        var my_class = new init_func_system_obj_class();
+        var func_obj_class = new init_func_obj_class();
+     
+     
+     var hierarchi_class  = init_hierarchi_class();
+//     var first_hierarchi_class_obj = new hierarchi_class(selectedObject, selected_model, 1);       
+     
+     
+  createStyles(File);  
+  currentSheet.setColumnWidth(0, 8*256);
+    currentSheet.setColumnWidth(1, 50*256);
+    currentSheet.setColumnWidth(2, 50*256);    
+    currentSheet.setColumnWidth(3, 50*256);
+    currentSheet.setColumnWidth(4, 50*256);
+    var softwareobj = new my_class(selectedObj[0]);
+       currentSheet.addRegion(0,4,0,0);  
+       currentSheet.cell(0,0).setCellStyle(Title_Style);
+       currentSheet.cell(0,0).setCellValue(selectedObj[0].ObjDef().Name(g_nLoc));
+       currentSheet.cell(1,0).setCellValue("№");   
+       currentSheet.cell(1,0).setCellStyle(Title_Style2);
+       currentSheet.cell(1,1).setCellValue("Название функции");
+       currentSheet.cell(1,1).setCellStyle(Title_Style2);
+       currentSheet.cell(1,2).setCellValue("Исполнители функции ");
+       currentSheet.cell(1,2).setCellStyle(Title_Style2);
+       currentSheet.cell(1,3).setCellValue("Информация/документы на входе");
+       currentSheet.cell(1,3).setCellStyle(Title_Style2);
+       currentSheet.cell(1,4).setCellValue("Информация/документы на выходе");
+       currentSheet.cell(1,4).setCellStyle(Title_Style2);
+    var connected_func = softwareobj.getFunctions().map(function(functOcc){return new func_obj_class(functOcc)});
+    var RowIterator = 2;
+    for (var i = 0; i<connected_func.length; i++) 
+    { 
+     var Executors = connected_func[i].Executors;
+     var inDocs = connected_func[i].inDocs;
+     var outDocs = connected_func[i].outDocs;
+        var maxCount =connected_func[i].getMaxCount();
+        if (maxCount==0) {maxCount =1};
+         currentSheet.cell(RowIterator,0).setCellValue(i+1);
+         currentSheet.cell(RowIterator,0).setCellStyle(Table_Style);
+         currentSheet.addRegion(0,wIterator,RowIterator+maxCount-1); 
+         currentSheet.cell(RowIterator,1).setCellValue(connected_func[i].name);
+         currentSheet.cell(RowIterator,1).setCellStyle(Table_Style);
+         currentSheet.addRegion(1,1,RowIterator,RowIterator+maxCount-1); 
+
+     columntOutput(currentSheet,Executors,RowIterator,maxCount,2);
+     
+     columntOutput(currentSheet,inDocs,RowIterator,maxCount,3);
+     columntOutput(currentSheet,outDocs,RowIterator,maxCount,4)
+   
+        RowIterator=RowIterator+maxCount;
+var a=0;
+ } //func 
+            for (var j = 2; j<RowIterator;j++){
+                   currentSheet.cell(j,0).setCellStyle(Table_Style);
+                   currentSheet.cell(j,1).setCellStyle(Table_Style);
+                   currentSheet.cell(j,2).setCellStyle(Table_Style);           
+                   currentSheet.cell(j,3).setCellStyle(Table_Style);
+                   currentSheet.cell(j,4).setCellStyle(Table_Style);
+            }
+
+    File.write();
+
+}
+function columntOutput(mySheet, objOccArr,Iterator,maxcount,column) 
+    { //функция вывода столббца талицы исполнителиЮ вх документы, исх документы
+         //если у элементов массива есть techterm, то обрабатываем и выводим их тоже....
+      
+         for (n=0; n<objOccArr.length;n++) {
+          var tech_term = '';      
+           tech_term = objOccArr[n].getConnectedObjOccs([Constants.ST_TECH_TERM], Constants.EDGES_INOUT);
+             var name= objOccArr[n].ObjDef().Name(g_nLoc);
+           if (tech_term.length!=0){
+               var tehTerm='';
+            for (i=0;i<tech_term.length;i++){
+                    tehTerm=tehTerm+"\n -" +tech_term[i].ObjDef().Name(g_nLoc); 
+            }
+                    
+               
+          var ss=  n+1+". "+name+"\n, параметры"+tehTerm;
+              var rts_str = mySheet.cell(Iterator+n,column).createRichTextString(ss);
+                rts_str.applyFont(0,name.length()+15,TABLE_FONT);
+                rts_str.applyFont(name.length()+15,tehTerm.length+name.length()+15,techterm_FONT);
+                 mySheet.cell(Iterator+n,column).setCellValue(rts_str);
+          }
+          else {
+             mySheet.cell(Iterator+n,column).setCellValue(n+1+". "+name);
+            //  mySheet.cell(Iterator+n,column).setCellValue(n+1+". "+name+"\n, параметры"+tehTerm);
+          }
+         if (objOccArr.length>0)   { //объединяем ячейки по столбцам
+            if (objOccArr.length<maxcount){
+                mySheet.addRegion(column,column,Iterator+objOccArr.length-1,Iterator+maxcount-1); 
+            }
+         }else {  mySheet.addRegion(column,column,Iterator,Iterator+maxcount-1); }
+}
+    }
+
+
+function getDocTextWithTerm(docObjOcc){
+        var tech_term = docObjOcc.getConnectedObjs([Constants.OT_TECH_TRM], Constants.EDGES_INOUT);
+    if (tech_term!=0){
+        var name= docObjOcc.ObjDef().Name(g_nLoc);
+        var tehTerm='';
+        for (i=0;i<tech_term.length;i++){
+            tehTerm=tehTerm+"\n -" + tech_term[i].ObjDef().Name(g_nLoc);
+        }
+        return name+"\n, параметры"+tehTerm;
+        
+    }
+    else {
+          return docObjOcc.ObjDef().Name(g_nLoc);  
+         }
+}// end function getDocTextWithTerm(docObjOcc)
+
+function init_func_system_obj_class(){
+    var func_system_obj_class= function(aris_occ_object)
+    {
+      this.objOcc = aris_occ_object; //объект класса Осс 
+     }
+    var proto =   func_system_obj_class.prototype;
+   
+   
+   proto.getFunctions= function(){ //возвращает все функции, с которыми связана Осс (объект класса)
+    var appSysOccList = this.objOcc.ObjDef().OccList().filter(function(appSysObj){return appSysObj.Model().TypeNum()==13});//получили список Осс на всех ЕРС моделях
+    var functionList = [];
+    appSysOccList.forEach(function(appSysOccObj){
+    var connectedFunction = appSysOccObj.getConnectedObjOccs([335]);
+        for (var i=0 ; i<connectedFunction.length; i++){
+            functionList.push(connectedFunction[i]);
+        }
+   
+    })
+    return functionList;
+    }
+   
+//    proto.getIputDocs(){}
+
+   return func_system_obj_class;   
+}
+
+function init_func_obj_class(){ //собирает все окружающие функцию элементы
+    var func_obj_class= function(aris_occ_object)
+    {
+        this.objOcc = aris_occ_object;//Осс объекта 
+        this.Executors = this.getExecutors(); //исполнители 
+        this.inDocs = this.getInDocs(); //вх. документы
+        this.outDocs = this.getOutDocs(); //исх документы
+        this.name = this.getName(); //имя функции
+        
+    }
+    var proto =   func_obj_class.prototype;
+   
+   proto.getName= function(){
+    return this.objOcc.ObjDef().Name(g_nLoc); }
+
+   proto.getMaxCount= function(){
+    return Math.max(this.Executors.length, this.inDocs.length, this.outDocs.length)}
+    
+   proto.getFunctions= function(){
+       return this.objOcc.ObjDef().getConnectedObjs([22,107], Constants.EDGES_OUT);
+    }
+    proto.getExecutors = function(){
+    var Executors = this.objOcc.getConnectedObjOccs([Constants.ST_POS]);
+    return Executors;
+        
+    }
+    proto.getInDocs= function(){
+        return this.objOcc.getConnectedObjOccs([Constants.ST_FILE, Constants.ST_INFO_CARR,Constants.ST_INFO_CARR_EDOC,Constants.ST_DOC],Constants.EDGES_IN);
+    }
+    proto.getOutDocs= function(){
+        return this.objOcc.getConnectedObjOccs([Constants.ST_FILE, Constants.ST_INFO_CARR,Constants.ST_INFO_CARR_EDOC,Constants.ST_DOC],Constants.EDGES_OUT);
+    }
+ 
+    
+    return func_obj_class;   
+}
+
+
+function init_hierarchi_class(){
+   // Used to store information about current object, and his childs    
+   //параметр model используется для коректной работы model
+   // level - 
+    var hierarchi_obj_class = function(aris_occ_object, model, level){
+           this.objOcc = aris_occ_object;
+           this.level = level; // number to store level 
+           this.model = model;
+           this.childs = this.getChilds7(); 
+           this.parents = this.getParents7();
+       }
+   //proto is short for prototype
+   var proto =   hierarchi_obj_class.prototype;
+   //метод получает Childs для текущего объекта
+   //примерно то же самое что мы делали при выводе справочника, но Childs тут будут не АРИС объекты, а нашы hierarchi_obj_class
+   //тоесть каждый из наших объектов будет иметь в себе еще масив hierarchi_obj_class для чайлдов
+   proto.getChilds = function(){
+      var childs = [];
+      var currenthierarchi_obj = this;
+       if(this.objOcc.SymbolNum()==Constants.ST_APPL_SYS_CLS){
+         var next_app_sys_clss = this.objOcc.getConnectedObjOccs([Constants.ST_APPL_SYS_CLS],Constants.EDGES_OUT)
+        .filter(function(connectedObjOcc){ return !currenthierarchi_obj.model.GetVisited(connectedObjOcc)});
+         var next_app_sys_tps = this.objOcc.getConnectedObjOccs([Constants.ST_APPL_SYS_TYPE],Constants.EDGES_IN)
+        .filter(function(connectedObjOcc){ return !currenthierarchi_obj.model.GetVisited(connectedObjOcc)});
+       var connectedObjOccs = next_app_sys_clss.concat(next_app_sys_tps);
+      }else{
+        if(this.objOcc.SymbolNum()==Constants.ST_APPL_SYS_TYPE){
+          var connectedObjOccs = this.objOcc.getConnectedObjOccs([Constants.ST_MOD_TYPE],Constants.EDGES_OUT)
+          .filter(function(connectedObjOcc){ return !currenthierarchi_obj.model.GetVisited(connectedObjOcc)});
+        }else{
+           var connectedObjOccs = [];
+        }
+      } 
+        connectedObjOccs.forEach(function(connectedObjOcc, index){
+            currenthierarchi_obj.model.MarkVisited(connectedObjOcc, true);
+            //создаем наш обект
+            var new_hierarchy_obj = new hierarchi_obj_class(connectedObjOcc, currenthierarchi_obj.model, currenthierarchi_obj.level+1);  
+            //new_hierarchy_obj.getChilds();
+            //и записываем его в childs
+            childs.push(new_hierarchy_obj);
+        });
+         //проверка на детализирующую модель
+        var AssignedModelsList = this.objOcc.ObjDef().AssignedModels(21).filter(function(model){return model.GUID()!=currenthierarchi_obj.objOcc.Model().GUID()});
+        if(AssignedModelsList.length>0){
+          var AssignedModel = AssignedModelsList[0];
+          AssignedModel.BuildGraph(true);
+          var CurrObjListInModel = this.objOcc.ObjDef().OccListInModel(AssignedModel);
+          CurrObjListInModel.forEach(function(Start_Object){
+              AssignedModel.MarkVisited(Start_Object, true);
+               //создаем наш обект
+              var new_hierarchy_obj = new hierarchi_obj_class(Start_Object, AssignedModel, currenthierarchi_obj.level);  
+              //new_hierarchy_obj.getChilds();
+              //и записываем его в childs
+              childs = childs.concat(new_hierarchy_obj.childs);
+          });
+        }
+        return childs;
+   }
+   return hierarchi_obj_class;
+}
+function createStyles(File){
+    DEFAULT_FONT = File.createFont();
+    DEFAULT_FONT.setFontName("Arial");
+    DEFAULT_FONT.setColor(getIndexedColors("Plum"));
+    DEFAULT_FONT.setFontHeightInPoints(12);
+    
+    DEFAULT_FONT2 = File.createFont();
+    DEFAULT_FONT2.setFontName("Arial");
+    DEFAULT_FONT2.setColor(getIndexedColors("Red"));
+    DEFAULT_FONT2.setFontHeightInPoints(30);
+    
+    Title_FONT1 = File.createFont();
+    Title_FONT1.setFontName("Arial");
+    Title_FONT1.setColor(getIndexedColors("Black"));
+    Title_FONT1.setFontHeightInPoints(16);
+
+    Title_FONT2 = File.createFont();
+    Title_FONT2.setFontName("Arial");
+    Title_FONT2.setColor(getIndexedColors("Black"));
+    Title_FONT2.setFontHeightInPoints(13);
+
+    DEFAUL_STYLE = File.createCellStyle(DEFAULT_FONT, 1, 1, 1, 1, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.ALIGN_CENTER, Constants.VERTICAL_CENTER, Constants.C_TRANSPARENT, Constants.C_GREY_80_PERCENT, Constants.SOLID_FOREGROUND);
+    DEFAUL_STYLE.setWrapText(true);
+    
+    Title_Style = File.createCellStyle(Title_FONT1, 1, 1, 1, 1, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.ALIGN_LEFT, Constants.VERTICAL_CENTER, Constants.C_GREY_40_PERCENT, Constants.C_GREY_50_PERCENT, Constants.SOLID_FOREGROUND);
+    Title_Style.setWrapText(true);
+   Title_Style2 = File.createCellStyle(Title_FONT2, 1, 1, 1, 1, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.ALIGN_CENTER, Constants.VERTICAL_CENTER, Constants.C_GREY_25_PERCENT, Constants.C_GREY_80_PERCENT, Constants.SOLID_FOREGROUND);
+    Title_Style2.setWrapText(true);
+
+    TABLE_FONT = File.createFont();
+    TABLE_FONT.setFontName("Arial");
+    TABLE_FONT.setColor(getIndexedColors("Black"));
+    TABLE_FONT.setFontHeightInPoints(12);
+    Table_Style = File.createCellStyle(TABLE_FONT, 1, 1, 1, 1, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.ALIGN_LEFT, Constants.VERTICAL_CENTER, Constants.C_BLACK, Constants.C_TRANSPARENT, Constants.SOLID_FOREGROUND);
+    Table_Style.setWrapText(true);
+        
+    techterm_FONT = File.createFont();
+    techterm_FONT.setFontName("Arial");
+    techterm_FONT.setColor(getIndexedColors("Orange"));
+    techterm_FONT.setFontHeightInPoints(9);
+    techterm_Style = File.createCellStyle(techterm_FONT, 1, 1, 1, 1, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.C_BLACK, Constants.ALIGN_LEFT, Constants.VERTICAL_CENTER, Constants.C_BLACK, Constants.C_GREY_50_PERCENT, Constants.SOLID_FOREGROUND);
+    techterm_Style.setWrapText(true);
+
+}
+
+function getIndexedColors(color_name){
+    var colors = {
+        Black: 0,
+        White: 1,
+        Red: 2,
+        Bright_Green: 3,
+        Blue: 4,
+        Yellow: 5,
+        Pink: 6,
+        Turquoise: 7,
+        Dark_Red: 16,
+        Green: 17,
+        Dark_Blue: 18,
+        Dark_Yellow: 19,
+        Violet: 20,
+        Teal: 21,
+        Gray_25: 22,
+        Gray_50: 23,
+        Periwinkle: 24,
+        Plum: 25,
+        Ivory: 26,
+        Light_Turquoise: 27,
+        Dark_Purple: 28,
+        Coral: 29,
+        Ocean_Blue: 30,
+        Ice_Blue: 31,
+        Dark_Blue: 32,
+        Pink: 33,
+        Yellow: 34,
+        Turquoise: 35,
+        Violet: 36,
+        Dark_Red: 37,
+        Teal: 38,
+        Blue: 39,
+        Sky_Blue: 40,
+        Light_Turquoise: 41,
+        Light_Green: 42,
+        Light_Yellow: 43,
+        Pale_Blue: 44,
+        Rose: 45,
+        Lavender: 46,
+        Tan: 47,
+        Light_Blue: 48,
+        Aqua: 49,
+        Lime: 50,
+        Gold: 51,
+        Light_Orange: 52,
+        Orange: 53,
+        Blue_Gray: 54,
+        Gray_Gray40: 55,
+        Dark_Teal: 56,
+        Sea_Green: 57,
+        Dark_Green: 58,
+        Olive_Green: 59,
+        Brown: 60,
+        Plum: 61,
+        Indigo: 62,
+        Gray_80: 63
+    }
+    if(colors[color_name]!=undefined){
+        return colors[color_name];
+    }else{
+        return 0;   
+    }
+}
