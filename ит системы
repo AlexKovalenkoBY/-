@@ -1,5 +1,5 @@
 /*
-привет
+
 */
 var g_nLoc = Context.getSelectedLanguage();
 var PublicInterface = undefined;
@@ -135,35 +135,12 @@ if ((currentObjDefparent=="0")||(currentObjDefparent=="")||(currentObjDefparent=
 }
 }
 var s=0;
- /*
- for (var i=0;i<totaldefslist.length;i++){
- id = totaldefslist[i].ObjectID();
- objCode = totaldefslist[i].Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(true);
- parentCode = totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).GetValue(true);
- nameObj = totaldefslist[i].Attribute(Constants.AT_NAME,g_nLoc).GetValue(true);
- newObjArray.push([id,objCode,parentCode,nameObj,totaldefslist[i]]);
- }
- 
-    for (var i=0;i<newObjArray.length;i++){
-        if (newObjArray[i][3]=="Центр сопровождения банковских операций"){
-            firstObj= newObjArray[i];
-        }
-    }
-       var node_class = new init_Node_class();
-       var root_node = new node_class (firstObj,newObjArray);
+for (var i=0;i<rootObjs_Array.length;i++){
+if  (rootObjs_Array[i].childs.length>0) {   
+    drawStructElementInModel(rootObjs_Array[i], it_Systems_Group)
+}    
+}
 
-//!!!!!!!!!!!ДАЛЕЕ НЕОБХОДИМО В ДЕРЕВО ОБЪЕКТОВ ДОБАВИТЬ ДОЛЖНОСТИ  В РАЗБИВКЕ ПО СП!!!!!!!!!!!!!!!!!!!!!      
-       root_node.childs= root_node.CreateChilds(root_node);
-       
-       
-   /*    for (var i=0;i<root_node.childs.length;i++){
-       file.OutputLn(root_node.childs[i].node,"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
-       }*/
-       
- 
-  
-//drawStructElementInModel(root_node, orgstructura2_0group);
- // 
 
 }
 
@@ -203,22 +180,23 @@ var stepX = 500;
 var StepY = 300;
 
 //1. создать группу  с именем главного СП
-var new_my_Group = init_Group.CreateChildGroup (structElement.node[3], g_nLoc);
+var new_my_Group = init_Group.CreateChildGroup (structElement.node.Name(g_nLoc), g_nLoc);
 //2. присвоить группе аттрибыи "Родительское СП"
-new_my_Group.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node[2]);
+new_my_Group.Attribute(Constants.AT_DESC,g_nLoc).setValue(structElement.node.Attribute(Constants.AT_DESC,g_nLoc));
 //3. создать модель с именем узла
-var new_my_Model = new_my_Group.CreateModel(Constants.MT_ORG_CHRT, structElement.node[3],g_nLoc); //создали новую модель в той же папке
-    new_my_Model.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node[2]);
+var new_my_Model = new_my_Group.CreateModel(Constants.MT_APPL_SYS_TYPE_DGM, structElement.node.Name(g_nLoc),g_nLoc); //создали новую модель в той же папке
+
+    new_my_Model.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node.Attribute(Constants.AT_NAME_FULL,g_nLoc).getValue());
 //4. создать рут объект 
-var firstOcc = new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.node[4],(500+structElement.childs.length*500)/2, 200, true,true); 
-structElement.node[4].CreateAssignment(new_my_Model);
+var firstOcc = new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.node,(500+structElement.childs.length*500)/2, 200, true,true); 
+structElement.node.CreateAssignment(new_my_Model);
 var firstOccX = firstOcc.X();
 var firstOccY = firstOcc.Y();
 //5. создать чилдов
 //draw childs elemenst without heir childrens
 var childsOcc = [];
 for (var i=0;i<structElement.childs.length;i++){
-childsOcc.push(new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[i].node[4],500+i*500, 650, true,true));
+childsOcc.push(new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.childs[i].node.Attribute(Constants.AT_DESC,g_nLoc).getValue().toString(),500+i*500, 650, true,true));
 }
 //6. нарисовать связи 
 var cxn = [];
