@@ -1,0 +1,253 @@
+/*
+
+*/
+var g_nLoc = Context.getSelectedLanguage();
+var PublicInterface = undefined;
+main2();
+function main2(){
+    PublicInterface = JavaImporter(
+        java.io.FileInputStream,
+        org.apache.commons.io.IOUtils,
+        java.io.StringWriter
+    );
+//  var file_path = "D:\\org\\apbstr.000.txt";
+     var file_path = getString ("TEXT_1");// C:\ARIS\SHAREFLD\apbstr.000.txt; исходный файл с СП указывать так
+    var writer = new PublicInterface.StringWriter();
+    var myFileStream = new PublicInterface.FileInputStream(file_path);
+    PublicInterface.IOUtils.copy(myFileStream, writer, "UTF-8"); 
+    
+    var csvData = writer.toString();    
+    myFileStream.close();
+     var str1array = csvData.split("\n");
+        var oneStr_array=[];
+     var total_array=[]; //глобальный массив всех объектов
+        
+           for (var i=1; i<str1array.length;i++){
+             oneStr_array=str1array[i].split(",");
+             if ((oneStr_array[0]!="1940")&&(oneStr_array[0]!="1485")) {
+             total_array.push(oneStr_array);}
+            }
+             for (var j=0;j<total_array.length;j++){
+             if (total_array[j][7].indexOf('\"')==0) {total_array[j][7]=  total_array[j][7].slice(1,total_array[j][7].length);}
+             if (total_array[j][7].indexOf('\"')==total_array[j][7].length-1) {total_array[j][7]=  total_array[j][7].slice(total_array[j][7].length-1,total_array[j][7].length);}
+              while (total_array[j][7].indexOf('\"\"')>0) {  
+              total_array[j][7]= total_array[j][7].replace('\"\"','\"');
+              }              
+            }
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ВНИМАНИЕ
+ДЛЯ КАЖДОГО ЭКЗ бд НЕОБХОДИМО УКАЗАТЬ ПРАВИЛЬНЫЕ guid ГРУПП, УКАЗАННЫХ В ЭТОМ СПИСКЕ
+
+Оргструктура 2.0 = 6db2add1-2325-11ea-1e27-0017a4772806
+
+Должности = d028d910-27a0-11ea-1e27-0017a4772806
+
+Подразделения = c867adf0-27a0-11ea-1e27-0017a4772806
+
+Оргструктура банка =  bc1aa60b-8668-11e2-7179-080027cef185
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+  
+//  var orgstructura_group = ArisData.getActiveDatabase().FindGUID("bc1aa60b-8668-11e2-7179-080027cef185");;  //выбирать следует группу Оргструктура банка
+//  var  orgstructura2_0group= ArisData.getActiveDatabase().FindGUID("6db2add1-2325-11ea-1e27-0017a4772806");    
+  var  it_Systems_Group= ArisData.getActiveDatabase().FindGUID("bc1aa605-8668-11e2-7179-080027cef185");    
+  var  it_BP_APPS= ArisData.getActiveDatabase().FindGUID("2b29c380-fd4b-11e5-1e27-0017a4772806");    
+  
+var totaldefslist = it_Systems_Group.ObjDefList(true, [Constants.OT_APPL_SYS_TYPE] ); 
+var currentObjDef = null;
+//формируем список объектов для удаления. в список поадают объекты, которые есть в Арисе, но нет в файле
+var toDeleteFile = Context.createOutputObject(Constants.OUTTEXT,"toDeleteITSystems.txt");
+toDeleteFile.OutputLn("Объекты ИТ систем для удаления из Ариса: ","Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);    
+var objExist = false; 
+var todeleteArray = [];
+var tmpObjDef = null;
+var tmpObjDefName = null;
+for (var i=0;i<totaldefslist.length;i++){
+    objExist= false;
+    tmpObjDefName= totaldefslist[i].Attribute(Constants.AT_INT_NAME,g_nLoc).getValue().toString();
+        tmpObjDef = totaldefslist[i];
+    for (var j=0;j<total_array.length;j++){
+        if (tmpObjDefName.toLowerCase()==total_array[j][0].toLowerCase()) {
+        objExist = true;
+    //    todeleteArray.push(totaldefslist[i]);
+        }
+    }
+    if (!objExist){ 
+    toDeleteFile.OutputLn(totaldefslist[i].Name(g_nLoc) + "; "+totaldefslist[i].Group().Parent().Name(g_nLoc)+"\\"+ totaldefslist[i].Group().Name(g_nLoc)+"; "+totaldefslist[i].Identifier(g_nLoc),"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);       
+    //пишем в протокол объект для удаления
+    } 
+    
+}
+
+/*todeleteArray = ArisData.Unique(todeleteArray);
+for (var i=0;i<todeleteArray.length;i++){
+  toDeleteFile.OutputLn(todeleteArray[i].Name(g_nLoc) + "; "+todeleteArray[i].Group().Parent().Name(g_nLoc)+"\\"+ todeleteArray[i].Group().Name(g_nLoc)+"; "+todeleteArray[i].Identifier(g_nLoc),"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);       
+  
+}*/
+toDeleteFile.WriteReport();
+//проверяем все объекты еа наличие атрибутов 
+/*for (var i=0;i<totaldefslist.length;i++){
+    for (j=0;j<total_array.length;j++){
+ //если имя объекта совпадает с названием СП из файла, то присваиваем атрибуты объекту из ариса
+    if (total_array[j][7]==totaldefslist[i].Attribute(Constants.AT_DESC,g_nLoc).GetValue(true)) {
+    totaldefslist[i].Attribute(Constants.AT_NAME_FULL,g_nLoc).setValue(total_array[j][0].toString());
+    totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).setValue(total_array[j][1].toString());
+    totaldefslist[i].Attribute(Constants.AT_SHORT_DESC,g_nLoc).setValue(total_array[j][3].toString());
+    
+    totaldefslist[i].Attribute(Constants.AT_MNFCT_1,g_nLoc).setValue(total_array[j][5].toString());
+    totaldefslist[i].Attribute(Constants.AT_INT_NAME,g_nLoc).setValue(total_array[j][0].toString());
+    }
+    
+    }
+}*/
+//создаем новые СП и заполняем атрибуты 
+var searchScope = 2;
+for (var i=0;i<total_array.length;i++){
+
+    currentObjDef = it_BP_APPS.GetOrCreateObjDef(Constants.OT_APPL_SYS_TYPE, searchScope ,total_array[i][7], g_nLoc);
+    currentObjDef.Attribute(Constants.AT_NAME_FULL,g_nLoc).setValue(total_array[i][0]);
+    currentObjDef.Attribute(Constants.AT_SRC,g_nLoc).setValue(total_array[i][1].toString());
+    currentObjDef.Attribute(Constants.AT_SHORT_DESC,g_nLoc).setValue(total_array[i][3].toString());
+    
+    currentObjDef.Attribute(Constants.AT_MNFCT_1,g_nLoc).setValue(total_array[i][5].toString());
+    currentObjDef.Attribute(Constants.AT_INT_NAME,g_nLoc).setValue(total_array[i][0].toString());
+
+}
+
+
+/*
+ var newObjArray = [];//["","","",""]     ;
+ var id="";
+ var objCode = "";
+ var parentCode = "";
+ var nameObj = "";
+*/ 
+ var rootObjs_Array  = [];
+var totaldefslist = it_Systems_Group.ObjDefList(true, [Constants.OT_APPL_SYS_TYPE] ); 
+       var node_class = new init_Node_class();
+     //  var root_node = new node_class (firstObj,newObjArray);
+var temp_node=null;
+for (var i=0;i<totaldefslist.length;i++) {
+  currentObjDefparent = totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).getValue().toString().toLowerCase();  
+if ((currentObjDefparent=="0")||(currentObjDefparent=="")||(currentObjDefparent==0)) {
+     temp_node = new node_class (totaldefslist[i],totaldefslist);    
+     temp_node.Childs =  temp_node.CreateChilds(temp_node);
+    rootObjs_Array.push(temp_node);
+}
+}
+var s=0;
+ /*
+ for (var i=0;i<totaldefslist.length;i++){
+ id = totaldefslist[i].ObjectID();
+ objCode = totaldefslist[i].Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).GetValue(true);
+ parentCode = totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).GetValue(true);
+ nameObj = totaldefslist[i].Attribute(Constants.AT_NAME,g_nLoc).GetValue(true);
+ newObjArray.push([id,objCode,parentCode,nameObj,totaldefslist[i]]);
+ }
+ 
+    for (var i=0;i<newObjArray.length;i++){
+        if (newObjArray[i][3]=="Центр сопровождения банковских операций"){
+            firstObj= newObjArray[i];
+        }
+    }
+       var node_class = new init_Node_class();
+       var root_node = new node_class (firstObj,newObjArray);
+
+//!!!!!!!!!!!ДАЛЕЕ НЕОБХОДИМО В ДЕРЕВО ОБЪЕКТОВ ДОБАВИТЬ ДОЛЖНОСТИ  В РАЗБИВКЕ ПО СП!!!!!!!!!!!!!!!!!!!!!      
+       root_node.childs= root_node.CreateChilds(root_node);
+       
+       
+   /*    for (var i=0;i<root_node.childs.length;i++){
+       file.OutputLn(root_node.childs[i].node,"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);
+       }*/
+       
+ 
+  
+//drawStructElementInModel(root_node, orgstructura2_0group);
+ // 
+
+}
+
+
+function init_Node_class(){
+   
+   var NodeClass = function(element,_myArray ){
+    this.myArray = _myArray;
+    this.node = element;
+    this.childs =[];// this.getNext();
+
+    }
+
+var proto = NodeClass.prototype ;
+
+proto.CreateChilds = function (NODE){
+var node = NODE.node;
+var _childs = [];
+var parentCode = node.Attribute(Constants.AT_NAME_FULL,g_nLoc).getValue().toString().toLowerCase(); 
+for (var i=0;i<NODE.myArray.length;i++){
+    if (parentCode == NODE.myArray[i].Attribute(Constants.AT_SRC,g_nLoc).getValue().toString().toLowerCase()) {
+        var _node = new NodeClass(NODE.myArray[i],NODE.myArray);
+           _childs.push(_node);
+           _node.childs = NODE.CreateChilds(_node);
+    }
+}
+return  _childs;
+}
+
+return NodeClass;
+}
+
+
+function drawStructElementInModel(structElement, init_Group){
+//нарисовали первый элемент aris_obj_def
+var stepX = 500;
+var StepY = 300;
+
+//1. создать группу  с именем главного СП
+var new_my_Group = init_Group.CreateChildGroup (structElement.node[3], g_nLoc);
+//2. присвоить группе аттрибыи "Родительское СП"
+new_my_Group.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node[2]);
+//3. создать модель с именем узла
+var new_my_Model = new_my_Group.CreateModel(Constants.MT_ORG_CHRT, structElement.node[3],g_nLoc); //создали новую модель в той же папке
+    new_my_Model.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node[2]);
+//4. создать рут объект 
+var firstOcc = new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.node[4],(500+structElement.childs.length*500)/2, 200, true,true); 
+structElement.node[4].CreateAssignment(new_my_Model);
+var firstOccX = firstOcc.X();
+var firstOccY = firstOcc.Y();
+//5. создать чилдов
+//draw childs elemenst without heir childrens
+var childsOcc = [];
+for (var i=0;i<structElement.childs.length;i++){
+childsOcc.push(new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[i].node[4],500+i*500, 650, true,true));
+}
+//6. нарисовать связи 
+var cxn = [];
+for (var i=0;i<childsOcc.length;i++){ //рисуем связи
+var points = [
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(firstOccX+(firstOcc.Width()/2),firstOccY+firstOcc.Height()), //start point
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(firstOccX+(firstOcc.Width()/2),firstOccY+firstOcc.Height()+150), //down
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(childsOcc[i].X()+(childsOcc[i].Width()/2),firstOccY+firstOcc.Height()+150), //left
+        new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(childsOcc[i].X()+(childsOcc[i].Width()/2),childsOcc[i].Y()) //endpoint
+    ];
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[i], Constants.CT_IS_CRT_BY,points));
+}
+//7. повторить для каждого чилда
+for (var i=0;i<structElement.childs.length;i++){ //рисуем чилдовые медели
+  drawStructElementInModel(structElement.childs[i], new_my_Group);
+  
+
+}
+//8. связать детализации с объектами
+
+
+
+
+
+
+
+ //model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[i].childObj ,500+i*500, 450, true,true); //создали головной объект на новой модели в точке 200, 200
+
+ 
+new_my_Model.ApplyTemplate();
+new_my_Model.setAttrOccHandling(Constants.ATTROCCHANDLING_BREAKATTR);
+}
