@@ -114,13 +114,6 @@ for (var i=0;i<total_array.length;i++){
 }
 
 
-/*
- var newObjArray = [];//["","","",""]     ;
- var id="";
- var objCode = "";
- var parentCode = "";
- var nameObj = "";
-*/ 
  var rootObjs_Array  = [];
 var totaldefslist = it_Systems_Group.ObjDefList(true, [Constants.OT_APPL_SYS_TYPE] ); 
        var node_class = new init_Node_class();
@@ -130,12 +123,12 @@ for (var i=0;i<totaldefslist.length;i++) {
   currentObjDefparent = totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).getValue().toString().toLowerCase();  
 if ((currentObjDefparent=="0")||(currentObjDefparent=="")||(currentObjDefparent==0)) {
      temp_node = new node_class (totaldefslist[i],totaldefslist);    
-     temp_node.Childs =  temp_node.CreateChilds(temp_node);
+     temp_node.childs =  temp_node.CreateChilds(temp_node);
     rootObjs_Array.push(temp_node);
 }
 }
 var s=0;
-for (var i=0;i<rootObjs_Array.length;i++){
+for (var i=0;i<1;i++){ //rootObjs_Array.length;i++){
 if  (rootObjs_Array[i].childs.length>0) {   
     drawStructElementInModel(rootObjs_Array[i], it_Systems_Group)
 }    
@@ -196,7 +189,7 @@ var firstOccY = firstOcc.Y();
 //draw childs elemenst without heir childrens
 var childsOcc = [];
 for (var i=0;i<structElement.childs.length;i++){
-childsOcc.push(new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.childs[i].node.Attribute(Constants.AT_DESC,g_nLoc).getValue().toString(),500+i*500, 650, true,true));
+childsOcc.push(new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.childs[i].node,500+i*500, 650, true,true));
 }
 //6. нарисовать связи 
 var cxn = [];
@@ -207,7 +200,7 @@ var points = [
         new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(childsOcc[i].X()+(childsOcc[i].Width()/2),firstOccY+firstOcc.Height()+150), //left
         new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(childsOcc[i].X()+(childsOcc[i].Width()/2),childsOcc[i].Y()) //endpoint
     ];
-    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[i], Constants.CT_IS_CRT_BY,points));
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[i], Constants.CT_CAN_SUBS_2,points));
 }
 //7. повторить для каждого чилда
 for (var i=0;i<structElement.childs.length;i++){ //рисуем чилдовые медели
