@@ -49,8 +49,8 @@ function main2(){
   
 //  var orgstructura_group = ArisData.getActiveDatabase().FindGUID("bc1aa60b-8668-11e2-7179-080027cef185");;  //выбирать следует группу Оргструктура банка
 //  var  orgstructura2_0group= ArisData.getActiveDatabase().FindGUID("6db2add1-2325-11ea-1e27-0017a4772806");    
-  var  it_Systems_Group= ArisData.getActiveDatabase().FindGUID("bc1aa605-8668-11e2-7179-080027cef185");    
-  var  it_BP_APPS= ArisData.getActiveDatabase().FindGUID("2b29c380-fd4b-11e5-1e27-0017a4772806");    
+  var  it_Systems_Group= ArisData.getActiveDatabase().FindGUID("bc1aa605-8668-11e2-7179-080027cef185");    //Информационные системы
+  var  it_BP_APPS= ArisData.getActiveDatabase().FindGUID("2b29c380-fd4b-11e5-1e27-0017a4772806");    // IT-архитектура бизнес-приложений
   
 var totaldefslist = it_Systems_Group.ObjDefList(true, [Constants.OT_APPL_SYS_TYPE] ); 
 var currentObjDef = null;
@@ -61,6 +61,12 @@ var objExist = false;
 var todeleteArray = [];
 var tmpObjDef = null;
 var tmpObjDefName = null;
+
+var toDeleteArray = [];
+var toCreateArray = [];
+var systemSoftwareArray = [];
+var appSoftwareArray = [];
+var specSoftwareArray = [];
 for (var i=0;i<totaldefslist.length;i++){
     objExist= false;
     tmpObjDefName= totaldefslist[i].Attribute(Constants.AT_INT_NAME,g_nLoc).getValue().toString();
@@ -68,38 +74,23 @@ for (var i=0;i<totaldefslist.length;i++){
     for (var j=0;j<total_array.length;j++){
         if (tmpObjDefName.toLowerCase()==total_array[j][0].toLowerCase()) {
         objExist = true;
-    //    todeleteArray.push(totaldefslist[i]);
         }
     }
     if (!objExist){ 
+        toDeleteArray.push(totaldefslist[i]); //добавили в массив для удаления
     toDeleteFile.OutputLn(totaldefslist[i].Name(g_nLoc) + "; "+totaldefslist[i].Group().Parent().Name(g_nLoc)+"\\"+ totaldefslist[i].Group().Name(g_nLoc)+"; "+totaldefslist[i].Identifier(g_nLoc),"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);       
     //пишем в протокол объект для удаления
     } 
-    
+    else {        
+        toCreateArray.push(totaldefslist[i]); //добавили в массив для создания новых объектов
+    }
+  
 }
 
-/*todeleteArray = ArisData.Unique(todeleteArray);
-for (var i=0;i<todeleteArray.length;i++){
-  toDeleteFile.OutputLn(todeleteArray[i].Name(g_nLoc) + "; "+todeleteArray[i].Group().Parent().Name(g_nLoc)+"\\"+ todeleteArray[i].Group().Name(g_nLoc)+"; "+todeleteArray[i].Identifier(g_nLoc),"Helvetica",14,Constants.C_BLACK,Constants.C_BLUE, Constants.FMT_ITALIC,0);       
-  
-}*/
+
 toDeleteFile.WriteReport();
-//проверяем все объекты еа наличие атрибутов 
-/*for (var i=0;i<totaldefslist.length;i++){
-    for (j=0;j<total_array.length;j++){
- //если имя объекта совпадает с названием СП из файла, то присваиваем атрибуты объекту из ариса
-    if (total_array[j][7]==totaldefslist[i].Attribute(Constants.AT_DESC,g_nLoc).GetValue(true)) {
-    totaldefslist[i].Attribute(Constants.AT_NAME_FULL,g_nLoc).setValue(total_array[j][0].toString());
-    totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).setValue(total_array[j][1].toString());
-    totaldefslist[i].Attribute(Constants.AT_SHORT_DESC,g_nLoc).setValue(total_array[j][3].toString());
-    
-    totaldefslist[i].Attribute(Constants.AT_MNFCT_1,g_nLoc).setValue(total_array[j][5].toString());
-    totaldefslist[i].Attribute(Constants.AT_INT_NAME,g_nLoc).setValue(total_array[j][0].toString());
-    }
-    
-    }
-}*/
-//создаем новые СП и заполняем атрибуты 
+
+//создаем новые ИТ системы  и заполняем атрибуты 
 var searchScope = 2;
 for (var i=0;i<total_array.length;i++){
 
@@ -107,17 +98,19 @@ for (var i=0;i<total_array.length;i++){
     currentObjDef.Attribute(Constants.AT_NAME_FULL,g_nLoc).setValue(total_array[i][0]);
     currentObjDef.Attribute(Constants.AT_SRC,g_nLoc).setValue(total_array[i][1].toString());
     currentObjDef.Attribute(Constants.AT_SHORT_DESC,g_nLoc).setValue(total_array[i][3].toString());
-    
+    currentObjDef.Attribute(Constants.AT_NAME_EXT_ALIAS,g_nLoc).setValue(total_array[i][4].toString());
     currentObjDef.Attribute(Constants.AT_MNFCT_1,g_nLoc).setValue(total_array[i][5].toString());
     currentObjDef.Attribute(Constants.AT_INT_NAME,g_nLoc).setValue(total_array[i][0].toString());
-
+    if (total_array[i][4].toLowerCase() == "прикладное") {appSoftwareArray.push(currentObjDef)};
+    if (total_array[i][4].toLowerCase() == "системное") {systemSoftwareArray.push(currentObjDef)};
+    if (total_array[i][4].toLowerCase() == "специализированное") {specSoftwareArray.push(currentObjDef)};
 }
 
 
  var rootObjs_Array  = [];
 var totaldefslist = it_Systems_Group.ObjDefList(true, [Constants.OT_APPL_SYS_TYPE] ); 
        var node_class = new init_Node_class();
-     //  var root_node = new node_class (firstObj,newObjArray);
+ 
 var temp_node=null;
 for (var i=0;i<totaldefslist.length;i++) {
   currentObjDefparent = totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).getValue().toString().toLowerCase();  
@@ -127,16 +120,71 @@ if ((currentObjDefparent=="0")||(currentObjDefparent=="")||(currentObjDefparent=
     rootObjs_Array.push(temp_node);
 }
 }
-var s=0;
-for (var i=0;i<1;i++){ //rootObjs_Array.length;i++){
-if  (rootObjs_Array[i].childs.length>0) {   
-    drawStructElementInModel(rootObjs_Array[i], it_Systems_Group)
+var currentmodel = null; //текущая модель для обновления либо прорисовки 
+var grouptoremove = null;
+var newArraytoAdd = [];
+for (var i=0;i<rootObjs_Array.length;i++){
+     if (modelExistInGroup(rootObjs_Array[i].node,Constants.MT_APPL_SYS_TYPE_DGM,it_Systems_Group) )     { //модель существует, то  проверяем ее на 
+    currentmodel = it_Systems_Group.ModelList ( true, [Constants.MT_APPL_SYS_TYPE_DGM]  ).filter(function (mymodel){
+    return mymodel.Name(g_nLoc).toLowerCase()==rootObjs_Array[i].node.Name(g_nLoc).toLowerCase()})
+            if ((currentmodel[0].ObjOccListBySymbol([Constants.ST_APPL_SYS_TYPE]).length-1)<rootObjs_Array[i].childs.length ) { // обновляем модель  если на ней элементов -1 шт меньше чем чилдов у объекта класса
+        //удаляем старую группу  с одноименным названием  и всеми вложенными моделяли 
+            grouptoremove=ArisData.getActiveDatabase().GroupList ( it_Systems_Group).filter(function(mygroup){
+                return mygroup.Name(g_nLoc).toLowerCase()==rootObjs_Array[i].node.Name(g_nLoc).toLowerCase()})
+              if (grouptoremove.length>0 ) {it_Systems_Group.Delete(grouptoremove[0]);}
+
+                
+        //рисуем заново 
+                 drawStructElementInModel(rootObjs_Array[i], it_Systems_Group) //рисуем
+                            newArraytoAdd.push(rootObjs_Array[i].node);
+            }
+    else { //если модель существует и ее обновлять не надо, то.............  
+    
+    }
+  }
+  else {  //если модель не существует, то рисуем модель и включем "голову" дл янанесения на одну из трех  групп объектов
+                 drawStructElementInModel(rootObjs_Array[i], it_Systems_Group); //рисуем
+                 newArraytoAdd.push(rootObjs_Array[i].node);
+  }      
+}        
+/*for (var i=0;i<1;i++){ //rootObjs_Array.length;i++){
+if  (rootObjs_Array[i].childs.length>0) { //если у объекта класса чилдов >0  
+    
+    drawStructElementInModel(rootObjs_Array[i], it_Systems_Group) //рисуем
 }    
-}
+    
+
+}*/
 
 
 }
 
+function occExistInModel(occ,symbol,model){
+var occlist = model.ObjOccListBySymbol ( symbol)    ;
+
+var occname = occ.ObjDef().Name(g_nLoc).toLowerCase();
+    for (var i=0;i<occlist.length;i++){
+            if (occlist[i].ObjDef().Name(g_nLoc).toLowerCase() == occname) {
+             return true;   
+            }
+    }
+return false; //если не нашли Осс с таим именем
+
+}
+
+function modelExistInGroup(modelname,modeltype,group){
+
+var currentDB = ArisData.getActiveDatabase();
+ var currentLocale = Context.getSelectedLanguage();
+ var searchItem = currentDB.createSearchItem(Constants.AT_NAME, g_nLoc, Constants.ABT_LONGTEXT, Constants.SEARCH_CMP_EQUAL, false, true) ;//non-case-sensitive + search using wildcards
+// var modelList = group.ModelList(true, [modeltype], searchItem ).filter(function(mymodel){
+var modelList = group.ModelList(true, [modeltype]).filter(function(mymodel){
+ return mymodel.Name(g_nLoc).toLowerCase()==modelname.Name(g_nLoc).toLowerCase();
+ })
+    if (modelList.length>0) {return true}
+    else {return false}
+    
+}
 
 function init_Node_class(){
    
@@ -177,20 +225,23 @@ var new_my_Group = init_Group.CreateChildGroup (structElement.node.Name(g_nLoc),
 //2. присвоить группе аттрибыи "Родительское СП"
 new_my_Group.Attribute(Constants.AT_DESC,g_nLoc).setValue(structElement.node.Attribute(Constants.AT_DESC,g_nLoc));
 //3. создать модель с именем узла
-var new_my_Model = new_my_Group.CreateModel(Constants.MT_APPL_SYS_TYPE_DGM, structElement.node.Name(g_nLoc),g_nLoc); //создали новую модель в той же папке
-
+    var new_my_Model = new_my_Group.CreateModel(Constants.MT_APPL_SYS_TYPE_DGM, structElement.node.Name(g_nLoc),g_nLoc); //создали новую модель в той же папке
     new_my_Model.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node.Attribute(Constants.AT_NAME_FULL,g_nLoc).getValue());
 //4. создать рут объект 
 var firstOcc = new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.node,(500+structElement.childs.length*500)/2, 200, true,true); 
+
+//8. связать детализации с объектами
 structElement.node.CreateAssignment(new_my_Model);
 var firstOccX = firstOcc.X();
 var firstOccY = firstOcc.Y();
+
 //5. создать чилдов
 //draw childs elemenst without heir childrens
 var childsOcc = [];
 for (var i=0;i<structElement.childs.length;i++){
 childsOcc.push(new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.childs[i].node,500+i*500, 650, true,true));
 }
+
 //6. нарисовать связи 
 var cxn = [];
 for (var i=0;i<childsOcc.length;i++){ //рисуем связи
@@ -202,23 +253,12 @@ var points = [
     ];
     cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[i], Constants.CT_CAN_SUBS_2,points));
 }
+
 //7. повторить для каждого чилда
-for (var i=0;i<structElement.childs.length;i++){ //рисуем чилдовые медели
-  drawStructElementInModel(structElement.childs[i], new_my_Group);
-  
-
+    for (var i=0;i<structElement.childs.length;i++){ //рисуем чилдовые медели
+    drawStructElementInModel(structElement.childs[i], new_my_Group);
 }
-//8. связать детализации с объектами
 
-
-
-
-
-
-
- //model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[i].childObj ,500+i*500, 450, true,true); //создали головной объект на новой модели в точке 200, 200
-
- 
 new_my_Model.ApplyTemplate();
 new_my_Model.setAttrOccHandling(Constants.ATTROCCHANDLING_BREAKATTR);
 }
