@@ -1,0 +1,232 @@
+var g_nLoc = Context.getSelectedLanguage();
+//var errFile = new java.io.FileWriter(getString ("TEXT_1"), false);  // file err.txt
+var outFile = new java.io.FileWriter(getString ("TEXT_2"), false);  // file DataTreeBP.CSV
+//var outFile2 = new java.io.FileWriter(getString ("TEXT_5"), false); // file DataITSBP.CSV
+//var outFile3 = new java.io.FileWriter(getString ("TEXT_6"), false); // file DataITS.CSV
+//var allmsg = new java.io.FileWriter(getString ("TEXT_9"), false); // file DataITS.CSV
+
+var enterObj = [Constants.ST_PACK]; //ST_PACK - пакет
+var exitObj = [Constants.ST_PACK]; //ST_PACK - пакет
+var propObj = [Constants.ST_EMPL_TYPE, Constants.ST_GRP];  /// ST_EMPL_TYPE -тип лица, ST_GRP - группа 
+var purpObj = [Constants.ST_OBJCTV]; //массив целей
+var productObj = [Constants.ST_PERFORM]; //ST_PERFORM - продукт(услуга)
+var ITObj = [Constants.ST_APPL_SYS_TYPE, Constants.ST_APPL_SYS_TYPE_2, Constants.ST_APPL_SYS, Constants.ST_APPL_SYS_1];
+var comma = getString ("TEXT_8");
+var quo = "\"";
+var nl = "\r\n";
+var qcq = quo + comma + quo;
+//var qcq =  comma ;
+var EOF = String.fromCharCode(26);
+var absentProprietor = "999";
+
+main();
+
+//*************************************************************
+function main(){
+ var selectedOcc  = ArisData.getSelectedObjOccs()[0];   
+    var init_class_obj = new init_bp_obj_class();
+    var firstObjOcc = null;
+    firstObjOcc = new init_class_obj (selectedOcc);
+
+    Context.setSelectedFormat(Constants.OUTTEXT); 
+    var File= Context.createOutputObject(Context.getSelectedFormat(), "DataTreeBP.CSV");   //this is how to use a TXT
+  var q = "\"";
+  var c = ","
+  File.OutputLn(q+firstObjOcc.id+q+c+q+firstObjOcc.num+q+c+firstObjOcc.nameOfbp+q+c+q+firstObjOcc.owner+q+c+q+firstObjOcc.nameNumber+q+c+q+firstObjOcc.childExist+q+c+q+firstObjOcc.parentBpid+q+c+q+firstObjOcc.dateStart+q+c+q+firstObjOcc.dateStop+
+  q+c+q+firstObjOcc.target+q+c+q+firstObjOcc.input+q+c+q+firstObjOcc.output+q+c+q+firstObjOcc.products+q,"Arial",16,Constants.C_BLUE,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0 );
+  File.WriteReport()  ;
+    var s=0;
+}
+function init_bp_obj_class(){
+    function bp_obj_class(arisobjOcc){
+    this.occ = arisobjOcc; //0
+    this.id = arisobjOcc.ObjDef().Identifier (g_nLoc).slice(arisobjOcc.ObjDef().Identifier(g_nLoc).indexOf(".")+1,arisobjOcc.ObjDef().Identifier (g_nLoc).length());
+    this.num = arisobjOcc.ObjDef().Name(g_nLoc).slice(0,arisobjOcc.ObjDef().Name(g_nLoc).lastIndexOf("."));
+    this.nameOfbp = arisobjOcc.ObjDef().Name(g_nLoc).slice(arisobjOcc.ObjDef().Name(g_nLoc).lastIndexOf(".")+2,arisobjOcc.ObjDef().Name(g_nLoc).length());;
+  
+    this.owner = this.getOwner(arisobjOcc); //10_Kазначейчтво
+    this.nameNumber = this.getNameNumber(arisobjOcc); //ОСБПФИ_3.3.9.1.
+    this.childExist = this.childExist(arisobjOcc); //1 OR 0
+    this.parentBpid = this.occ.ObjDef().getConnectedObjs([Constants.OT_FUNC],Constants.EDGES_IN,[Constants.CT_IS_PRCS_ORNT_SUPER])[0].Identifier (g_nLoc).slice(arisobjOcc.ObjDef().Identifier(g_nLoc).indexOf(".")+1,arisobjOcc.ObjDef().Identifier (g_nLoc).length());
+    
+    this.dateStart= arisobjOcc.ObjDef().Attribute(Constants.AT_VALID_FROM,g_nLoc).GetValue(true).toString()=="" ? "2013-01-31": arisobjOcc.ObjDef().Attribute(Constants.AT_VALID_FROM,g_nLoc).GetValue(true).toString();
+    this.dateStop = arisobjOcc.ObjDef().Attribute(Constants.AT_VALID_UNTIL,g_nLoc).GetValue(true).toString()=="" ? "2100-01-01":arisobjOcc.ObjDef().Attribute(Constants.AT_VALID_UNTIL,g_nLoc).GetValue(true).toString() ;
+    this.target =this.getTarget(arisobjOcc) ;
+    this.input = this.getInputs(arisobjOcc);          //1
+    this.output = this.getOutputs(arisobjOcc);
+    this.products =this.getProduct(this.occ) ;
+    
+
+    }
+    
+    var proto = bp_obj_class.prototype;
+
+    proto.getProduct = function (occFunObj) { 
+    
+    var strProducts = new String();
+    var ObjOccsProducts = occFunObj.getConnectedObjOccs([Constants.ST_OBJCTV],Constants.EDGES_INOUT);
+    
+    var lastChar = "";
+    
+    for (var i = 0; i < ObjOccsProducts.length; ++i) {
+/*        if (ObjOccsProducts.length -1 == i) lastChar = ".";
+        else lastChar = ""; //30,09,2019 заменил символ ";" на пустой 
+       // strProducts += ObjOccsProducts[i].getObjDefName(g_nloc).toString().trim() + lastChar;*/
+       
+       strProducts += ObjOccsProducts[i].getObjDefName(g_nLoc).toString().trim()+(((ObjOccsProducts.length>1)&&(i<ObjOccsProducts.length-1))? "; ": "");
+    }
+    
+    return strProducts+".";        
+    }
+    
+    proto.getOutputs  = function (occFunObj){ //входы функции
+    
+    var strEnters = "";
+    var ObjOccsOut = occFunObj.getConnectedObjOccs([Constants.ST_PACK],Constants.EDGES_OUT); // входящие экземпляры к функции
+    ObjOccsOut = ArisData.sort(ObjOccsOut, Constants.AT_HIER_NUM, g_nLoc);
+    var tempstring = "";
+    for (var i = 0; i < ObjOccsOut.length; ++i) {
+      strEnters += ObjOccsOut[i].ObjDef().Name(g_nLoc).toString().trim() + 
+      (ObjOccsOut[i].ObjDef().Attribute(Constants.AT_DESC,g_nLoc).GetValue(true).toString().trim().length>0 ? " "+ ObjOccsOut[i].ObjDef().Attribute(Constants.AT_DESC,g_nLoc).GetValue(true).toString().trim() + (i > 0 ?  "; " : "") : "");
+    }
+         return   strEnters +".";//.substring(0,strEnters.length).replace("..","."); 
+}
+
+    proto.getInputs  = function (occFunObj){ //входы функции
+    
+    var strEnters = "";
+    var ObjOccsIn = occFunObj.getConnectedObjOccs([Constants.ST_PACK],Constants.EDGES_IN); // входящие экземпляры к функции
+    ObjOccsIn = ArisData.sort(ObjOccsIn, Constants.AT_HIER_NUM, g_nLoc);
+    var tempstring = "";
+    for (var i = 0; i < ObjOccsIn.length; ++i) {
+      strEnters += ObjOccsIn[i].ObjDef().Name(g_nLoc).toString().trim() + 
+      (ObjOccsIn[i].ObjDef().Attribute(Constants.AT_DESC,g_nLoc).GetValue(true).toString().trim().length>0 ? " "+ ObjOccsIn[i].ObjDef().Attribute(Constants.AT_DESC,g_nLoc).GetValue(true).toString().trim() + (i > 0 ?  "; " : "") : "");
+    }
+         return   strEnters +".";//.substring(0,strEnters.length).replace("..","."); 
+}
+   proto.getParentBPid = function(arisobjOcc){
+     var superior = arisobjOcc.Model().SuperiorObjDefs ( ); //SuperiorObjDefs ( )
+    
+   return  superior[0].Identifier (g_nLoc).slice(superior[0].Identifier(g_nLoc).indexOf(".")+1,superior[0].Identifier (g_nLoc).length())
+    }
+    proto.childExist = function (occFunObj){
+  //  var occArr = ArisData.getSelectedModels()[0].ObjOccListFilter(Constants.OT_FUNC, Constants.ST_VAL_ADD_CHN_SML_1);      
+    var assignedModels = occFunObj.ObjDef().AssignedModels(Constants.MT_VAL_ADD_CHN_DGM).filter(function(mymodel){
+    return mymodel.Name(g_nLoc).indexOf("_Окружение БП")>-1
+    });
+    if (assignedModels.length>0) {return 1}
+    else {return 0};
+    }
+    proto.getOwner = function (occFunObj) {  //владалец функции
+    
+    var strProprietors = new String();
+    var ObjOccsProp = occFunObj.getConnectedObjOccs([Constants.ST_EMPL_TYPE, Constants.ST_GRP],Constants.EDGES_IN); // исходящие связи к функции
+    
+    if (ObjOccsProp != ""){
+        for (var i = 0; i < ObjOccsProp.length; ++i){
+            var Proprietors = ObjOccsProp[i].ObjDef().Attribute(Constants.AT_PERS_RESP ,g_nLoc).GetValue(true).toString().trim();    
+            if (Proprietors == "") {
+//                Dialogs.MsgBox(ObjOccsProp[i].ObjDef().Attribute(Constants.AT_ID,g_nLoc).GetValue(true));
+            errFile.write("Отсутствует заполненое поле владелеца на " + ObjOccsProp[i].ObjDef().Attribute(Constants.AT_ID,g_nLoc).GetValue(true) + " " + ObjOccsProp[i].getObjDefName(g_nLoc)) ;}
+            else strProprietors += Proprietors.substr(0, Proprietors.indexOf("_")) + (i > 0 ?  "; " : "");
+        }
+    }
+    else strProprietors = absentProprietor; // by default proprietor is absent
+    
+    return strProprietors;    
+} // getOwner
+
+
+     proto.getTarget=function(occFunObj){ //выборка целей
+    
+    var strPurposes = new String();
+    var ObjOccsPurp = occFunObj.getConnectedObjOccs([Constants.ST_OBJCTV],Constants.EDGES_OUT); // исходящие связи от функции у цели
+    ObjOccsPurp = ArisData.sort(ObjOccsPurp, Constants.AT_HIER_NUM, g_nLoc); //отсортировали цели для вывода в файл 
+    var lastChar = "";
+    var tempstring = "";
+
+      for (var i = 0; i < ObjOccsPurp.length; ++i) 
+        {
+            tempstring  = ObjOccsPurp[i].getObjDefName(g_nLoc).toString().trim();
+            strPurposes=strPurposes+tempstring+(i<ObjOccsPurp.length ?  ". " : "");
+         }
+         
+         return   strPurposes.substring(0,strPurposes.length-1).replace("..",".") 
+    }
+    proto.getNameNumber = function (occFunc){
+    
+    var code = occFunc.ObjDef().Name(g_nLoc).trim();
+    if (code == "(Без имени)") code = occFunc.ObjDef().Attribute(Constants.AT_DESC,g_nLoc).GetValue(true).toString().trim();
+    
+    var mas = code.substr(0, code.lastIndexOf(".")).split(""); 
+    var code_bp_txt = "";
+    
+    switch (mas[0]){
+        case '1':
+        code_bp_txt = "УПБП";
+        break;
+        
+        case '2':
+        code_bp_txt = "ОББП"
+        break;
+        
+        case '3':
+        code_bp_txt = "ОСБП";
+        
+        switch (mas[2]){
+            case '1':
+            code_bp_txt += "КК";
+            break;
+            
+            case '2':
+            code_bp_txt += "ФЛ"
+            break;
+            
+            case '3':
+            code_bp_txt += "ФИ";
+            break;
+            
+            case '4':
+            code_bp_txt += "ИД";
+            break;
+        }
+        break;
+        
+        case '4':
+        code_bp_txt = "РЗБП";
+        break;
+        
+        case '5':
+        code_bp_txt = "ПРБП";
+        break;
+    }
+    
+    code_bp_txt += "_" + code.substr(0, code.indexOf(" "));    
+    
+    return code_bp_txt;
+}
+return bp_obj_class;
+}
+
+
+/*
+
+getConnectedObjs ( int[] aObjTypes, int nCxnKind, int[] aCxnTypes )
+
+ 
+Returns all objects of the specified type connected with this object by connections of the given types. 
+This method is also available in Business Publisher Report.
+Return value
+ObjDef[]
+Array of connected objects
+Parameters
+int[]
+aObjTypes
+Array of types of connected objects 
+int
+nCxnKind
+optional: Type and direction of relationships used for evaluation: Constants.EDGES_INOUT (Default): Returns incoming and outgoing relationships Constants.EDGES_IN: Only returns incoming (passive) relationships Constants.EDGES_OUT: Only returns outgoing (active) relationships Constants.EDGES_ASSIGN: Only returns assignment relationships. A link of this constant with EDGES_IN and EDGES_OUT via OR is possible. (Default: Link with EDGES_OUT). Constants.EDGES_INOUTASSIGN: Returns incoming and outgoing relationships and assignment relationships.  
+int[]
+aCxnTypes
+Array of connection types defining which connections to consider. The value null considers all connection types. 
+*/
