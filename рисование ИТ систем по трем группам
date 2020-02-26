@@ -1,0 +1,314 @@
+/*
+часть 2. прорисовка моделей на основании ранее загруженных айлов и генерации объектов
+*/
+var g_nLoc = Context.getSelectedLanguage();
+
+main2();
+function main2(){
+  var  it_Systems_Group= ArisData.getActiveDatabase().FindGUID("bc1aa605-8668-11e2-7179-080027cef185");    //Информационные системы
+  var  it_BP_APPS= ArisData.getActiveDatabase().FindGUID("2b29c380-fd4b-11e5-1e27-0017a4772806");    // IT-архитектура бизнес-приложений
+
+//строим иерархическое дерево объектов
+ var rootObjs_Array  = [];
+var totaldefslist = it_Systems_Group.ObjDefList(true, [Constants.OT_APPL_SYS_TYPE] ); 
+       var node_class = new init_Node_class();
+totaldefslist  = totaldefslist.sort();
+var totaldefnames = [];
+ for (var i=0;i<totaldefslist.length;i++){
+    totaldefnames.push([totaldefslist[i].Name(g_nLoc)+"; ",totaldefslist[i].Attribute(Constants.AT_INT_NAME, g_nLoc).getValue().toString()+"\n"]);
+}
+var temp_node=null;
+for (var i=0;i<totaldefslist.length;i++) {//totaldefslist.length
+  currentObjDefparent = totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).getValue().toString().toLowerCase();  
+    if ((totaldefslist[i].Attribute(Constants.AT_SRC,g_nLoc).getValue()==0)) /*&&
+        (totaldefslist[i].Attribute(Constants.AT_INT_NAME,g_nLoc).getValue()!=0)&&
+        (totaldefslist[i].Attribute(Constants.AT_NAME_FULL,g_nLoc).getValue()!=0))*/ {
+     temp_node = new node_class (totaldefslist[i],totaldefslist);    
+     temp_node.childs =  temp_node.CreateChilds(temp_node);
+    rootObjs_Array.push(temp_node);
+}
+}
+var currentmodel = null; //текущая модель для обновления либо прорисовки 
+var grouptoremove = null;
+var newArraytoAdd = [];
+for (var i=0;i<rootObjs_Array.length;i++){
+     if (modelExistInGroup(rootObjs_Array[i].node,Constants.MT_APPL_SYS_TYPE_DGM,it_Systems_Group) )     { //модель существует, то  проверяем ее на 
+    currentmodel = it_Systems_Group.ModelList ( true, [Constants.MT_APPL_SYS_TYPE_DGM]  ).filter(function (mymodel){
+    return mymodel.Name(g_nLoc).toLowerCase()==rootObjs_Array[i].node.Name(g_nLoc).toLowerCase()})
+            if ((currentmodel[0].ObjOccListBySymbol([Constants.ST_APPL_SYS_TYPE]).length-1)<rootObjs_Array[i].childs.length ) { // обновляем модель  если на ней элементов -1 шт меньше чем чилдов у объекта класса
+        //удаляем старую группу  с одноименным названием  и всеми вложенными моделяли 
+            grouptoremove=ArisData.getActiveDatabase().GroupList ( it_Systems_Group).filter(function(mygroup){
+                return mygroup.Name(g_nLoc).toLowerCase()==rootObjs_Array[i].node.Name(g_nLoc).toLowerCase()})
+              if (grouptoremove.length>0 ) {it_Systems_Group.Delete(grouptoremove[0]);}
+                
+        //рисуем заново 
+                 drawStructElementInModel(rootObjs_Array[i], it_Systems_Group) //рисуем
+                 newArraytoAdd.push(rootObjs_Array[i].node);
+            }
+    else { //если модель существует и ее обновлять не надо, то.............  
+    
+    }
+  }
+  else {  //если модель не существует, то рисуем модель и включем "голову" дл янанесения на одну из трех  групп объектов
+                 drawStructElementInModel(rootObjs_Array[i], it_Systems_Group); //рисуем
+                 newArraytoAdd.push(rootObjs_Array[i].node);
+  }      
+} 
+
+
+ var appSoftModel  =  ArisData.getActiveDatabase().FindGUID("485ef056-fd5f-11e5-1e27-0017a4772806");      //модель Прикладное ПО
+ var systemSoftModel  =  ArisData.getActiveDatabase().FindGUID("485ef018-fd5f-11e5-1e27-0017a4772806");      //модель Прикладное ПО
+ var specSoftModel =  ArisData.getActiveDatabase().FindGUID("485ef04e-fd5f-11e5-1e27-0017a4772806");      //модель Прикладное ПО
+drawMainObjsInModel(newArraytoAdd, appSoftModel, "Прикладное") ;
+drawMainObjsInModel(newArraytoAdd, sysSoftModel, "Системное") ;
+drawMainObjsInModel(newArraytoAdd, specSoftModel, "Специализированное") ;
+var s=0;
+}//main2
+
+function drawMainObjsInModel(objArray, model, type){
+
+//    var occlist = model.ObjOccList ( );
+    var ramkaOcc = model.ObjOccListFilter ( Constants.OT_APPL_SYS_CLS )[0];
+    var allOccs = model.ObjOccListFilter ( Constants.OT_APPL_SYS_TYPE );
+    var xCoord = [];
+    var yCoord = [];
+
+for (var i = 0; i < allOccs.length; i++) {
+xCoord.push(allOccs[i].X());
+yCoord.push(allOccs[i].Y());
+}
+var maxX = Math.max.apply(null, xCoord);
+var maxY = Math.max.apply(null, yCoord);
+maxY = maxY+150;
+
+var arrayToDrawing = [];
+var found = false;
+for ( i=0; i < objArray.length; i++ ) {
+    found = false;
+    for ( var j=0; j <allOccs.length; j++ ) {
+      if ( allOccs[j].ObjDef()===objArray[i] ) { found = true;}
+    }
+    
+    if ((objArray[i].Attribute(Constants.AT_UA_AST,g_nLoc).getValue().toString().indexOf(type)>-1)&& (!found)) {
+    arrayToDrawing.push(objArray[i]);
+    }
+}
+
+var newOcc_ = null;
+var cxn = [];
+for ( i = 0; i < arrayToDrawing.length; i++ ){ //наносим новые ОСС на модель 
+ newOcc_=model.createObjOcc(Constants.ST_APPL_SYS_TYPE,arrayToDrawing[i],maxX+300*(i%15), maxY+200*(i/6|0), true,true); //нарисовали ОСС 
+ // occInModel.push(currModel.createObjOcc(Constants.ST_POS,tempPositionsArray[k][2],100+400*(k%6), 100+150*(k/6|0), true,true));
+ var points = [
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(ramkaOcc.X()+ramkaOcc.Width(),ramkaOcc.Y()+ramkaOcc.Height()), //right
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(newOcc_.X(),newOcc_.Y()) //start point
+               
+             ];
+cxn.push(model.CreateCxnOcc(ramkaOcc, newOcc_, Constants.CT_CAN_SUBS_2,points));
+}
+
+
+var s=0;
+}//drawMainObjsInModel
+
+function elementInArray(element,array){
+for (var i=0;i<array.length;i++){
+    if (element===array[i]) { return true }
+}
+    return false;
+}
+function occExistInModel(occ,symbol,model){
+var occlist = model.ObjOccListBySymbol ( symbol)    ;
+
+var occname = occ.ObjDef().Name(g_nLoc).toLowerCase();
+    for (var i=0;i<occlist.length;i++){
+            if (occlist[i].ObjDef().Name(g_nLoc).toLowerCase() == occname) {
+             return true;   
+            }
+    }
+return false; //если не нашли Осс с таим именем
+
+}
+
+function objdefExistInGroup(elementname,elementtype,group){
+
+
+var elementList = group.ObjDefList(true, [elementtype]).filter(function(myelement){
+ return myelement.Name(g_nLoc).toString().toLowerCase()==elementname.toLowerCase();
+ })
+    if (elementList.length>0) {return true}
+    else {return false}
+    
+}
+
+
+function modelExistInGroup(modelname,modeltype,group){
+
+var modelList = group.ModelList(true, [modeltype]).filter(function(myelement){
+ return myelement.Name(g_nLoc).toString().toLowerCase()==modelname.Name(g_nLoc).toLowerCase();
+ })
+    if (modelList.length>0) {return true}
+    else {return false}
+    
+}
+
+
+function init_Node_class(){
+   
+   var NodeClass = function(element,_myArray ){
+    this.myArray = _myArray;
+    this.node = element;
+    this.childs =[];// this.getNext();
+
+    }
+
+var proto = NodeClass.prototype ;
+
+proto.CreateChilds = function (NODE){
+var node = NODE.node;
+var _childs = [];
+var parentCode = node.Attribute(Constants.AT_NAME_FULL,g_nLoc).getValue().toString().toLowerCase(); 
+var parentName = node.Attribute(Constants.AT_NAME,g_nLoc).getValue().toString().toLowerCase(); 
+if (!((parentName =="") || (parentCode =="")) ) {
+    for (var i=0;i<NODE.myArray.length;i++){
+    if ((parentCode == NODE.myArray[i].Attribute(Constants.AT_SRC,g_nLoc).getValue().toString().toLowerCase())&& 
+         (parentName !=NODE.myArray[i].Attribute(Constants.AT_SRC,g_nLoc).getValue().toString().toLowerCase())  ) {
+        var _node = new NodeClass(NODE.myArray[i],NODE.myArray);
+           _childs.push(_node);
+           _node.childs = NODE.CreateChilds(_node);
+    }
+}
+}
+return  _childs;
+}
+
+return NodeClass;
+}
+
+
+function drawStructElementInModel(structElement, init_Group){
+//нарисовали первый элемент aris_obj_def
+var stepX = 300;
+var StepY = 400;
+var fx=600;  //начальный X
+var fy=100; //начальный Y
+
+var LRstepX=550; //плечо влево-вправо
+var ofsetRight = 70; //смещение вправо от связи к модели
+var oYstep=300;
+
+var  myOccWidth = 300 ;
+var myOccHeight  = 250;
+
+//1. создать группу  с именем главного СП
+var new_my_Group = init_Group.CreateChildGroup (structElement.node.Name(g_nLoc), g_nLoc);
+//2. присвоить группе аттрибыи "Родительское СП"
+new_my_Group.Attribute(Constants.AT_DESC,g_nLoc).setValue(structElement.node.Attribute(Constants.AT_DESC,g_nLoc));
+//3. создать модель с именем узла
+    var new_my_Model = new_my_Group.CreateModel(Constants.MT_APPL_SYS_TYPE_DGM, structElement.node.Name(g_nLoc),g_nLoc); //создали новую модель в той же папке
+    new_my_Model.Attribute(Constants.AT_SRC,g_nLoc).setValue(structElement.node.Attribute(Constants.AT_NAME_FULL,g_nLoc).getValue());
+//4. создать рут объект 
+var firstOcc = new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.node,fx, fy, true,true); 
+firstOcc.SetSize ( myOccWidth, myOccHeight );
+//8. связать детализации с объектами
+structElement.node.CreateAssignment(new_my_Model);
+var firstOccX = firstOcc.X();
+var firstOccY = firstOcc.Y();
+
+//5. создать чилдов
+//draw childs elemenst without heir childrens
+var childsOcc = [];
+/*for (var i=0;i<structElement.childs.length;i++){
+childsOcc.push(new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.childs[i].node,500+i*500, 650, true,true));
+}
+*/
+//6. нарисовать связи 
+
+
+var childcount = structElement.childs.length;
+
+var center = (childcount/3|0)+childcount%3;
+var Left_ = childcount/3|0;
+var Right_ = childcount-center-Left_;
+var occCenter =[];
+var occLeft = [];
+var occRight = []; 
+var childIndex=0;
+var cxn = [];
+
+for (var i=0;i<center;i++){ //рассчиттали координаты Occ для центральной линии
+if (i==0) { occCenter.push([fx+ofsetRight+(firstOcc.Width())/2,fy+1.5*oYstep])}
+  else {
+      occCenter.push([occCenter[i-1][0],occCenter[i-1][1]+oYstep])
+  }
+  var newOcc_=new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.childs[childIndex].node,occCenter[i][0], occCenter[i][1], true,true);
+  newOcc_.SetSize ( myOccWidth, myOccHeight );
+  var newOcc_h = newOcc_.Height();
+  var newOcc_w = newOcc_.Width();
+  childsOcc.push(newOcc_);   
+
+var points = [
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()), //start point
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),newOcc_.Y()+(newOcc_h/2)), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)+ofsetRight,newOcc_.Y()+newOcc_h/2) //right
+             ];
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[childIndex], Constants.CT_CAN_SUBS_2,points));
+      childIndex++;
+}
+for (var i=0;i<Left_;i++){ //рассчиттали координаты для левой линии
+if (i==0) { occLeft.push([fx+(firstOcc.Width()/2)+ofsetRight-LRstepX,fy+1.5*oYstep])}
+  else {
+      occLeft.push([occLeft[i-1][0],occLeft[i-1][1]+oYstep])
+  }
+//childsOcc.push(new_my_Model.createObjOcc(Constants.ST_ORG_UNIT_1,structElement.childs[childIndex].node[4],occLeft[i][0], occLeft[i][1], true,true));   //ИНДЕКС МАССИВА ЧИЛДОВ!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  var newOcc_=new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.childs[childIndex].node,occLeft[i][0], occLeft[i][1], true,true);
+  newOcc_.SetSize ( myOccWidth, myOccHeight );
+  var newOcc_h = newOcc_.Height();
+  var newOcc_w = newOcc_.Width();
+    childsOcc.push(newOcc_);   
+
+var points = [
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()), //start point
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()+0.5*oYstep), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)-LRstepX,fy+firstOcc.Height()+0.5*oYstep), //left
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)-LRstepX,newOcc_.Y()+(newOcc_h/2)), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)-LRstepX+ofsetRight,newOcc_.Y()+(newOcc_h/2)) //right
+               
+             ];
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[childIndex], Constants.CT_CAN_SUBS_2,points));
+        childIndex++;
+}
+for (var i=0;i<Right_;i++){ //рассчиттали координаты для правой линии
+if (i==0) { occRight.push([fx+(firstOcc.Width()/2)+LRstepX+ofsetRight,fy+1.5*oYstep])}
+  else {
+      occRight.push([occRight[i-1][0],occRight[i-1][1]+oYstep])
+  }
+  var newOcc_=new_my_Model.createObjOcc(Constants.ST_APPL_SYS_TYPE,structElement.childs[childIndex].node,occRight[i][0], occRight[i][1], true,true);
+  newOcc_.SetSize ( myOccWidth, myOccHeight );
+  var newOcc_h = newOcc_.Height();
+  var newOcc_w = newOcc_.Width();
+    childsOcc.push(newOcc_);   
+
+var points = [
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()), //start point
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2),fy+firstOcc.Height()+0.5*oYstep), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)+LRstepX,fy+firstOcc.Height()+0.5*oYstep), //left
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)+LRstepX,newOcc_.Y()+(newOcc_h/2)), //down
+               new com.idsscheer.aris.cscommon.webreportbase.reportobjects.Point(fx+(firstOcc.Width()/2)+LRstepX+ofsetRight,newOcc_.Y()+(newOcc_h/2)) //right
+               
+             ];
+    cxn.push(new_my_Model.CreateCxnOcc( firstOcc,childsOcc[childIndex], Constants.CT_CAN_SUBS_2,points));
+        childIndex++;
+}
+
+
+
+
+//7. повторить для каждого чилда
+    for (var i=0;i<structElement.childs.length;i++){ //рисуем чилдовые медели
+    drawStructElementInModel(structElement.childs[i], new_my_Group);
+}
+
+new_my_Model.ApplyTemplate();
+new_my_Model.setAttrOccHandling(Constants.ATTROCCHANDLING_BREAKATTR);
+}
