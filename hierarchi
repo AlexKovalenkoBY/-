@@ -1,0 +1,216 @@
+var g_nLoc = Context.getSelectedLanguage();
+
+main();
+
+function main(){
+    var oOutput = Context.createOutputObject();
+    
+    var hierarchi_class = init_hierarchi_class();
+    
+    
+    var sel_objects = ArisData.getSelectedObjDefs();
+    for( var i=0;i<sel_objects.length;i++){
+        var sel_obj = sel_objects[i];
+        oOutput.OutputLn(sel_obj.Name(g_nLoc),"Arial",26,Constants.C_RED,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0); //название модуля
+        var sel_obj_occ_list_on_EPC =   sel_obj.OccList().filter(function(item){
+            return item.Model().TypeNum()==13;
+        });  
+        
+        
+        var connected_functions = new Array();
+        
+        sel_obj_occ_list_on_EPC.forEach(function(occ_on_EPC){
+          occ_on_EPC.getConnectedObjOccs([335], Constants.EDGES_OUT).forEach(function(func_item){
+              connected_functions.push(func_item);
+          });
+        });
+        
+        var hierarchi_class_obj = new hierarchi_class();
+        
+        connected_functions.forEach(function(func_item){
+               hierarchi_class_obj.add_new(func_item);
+          });
+       
+           
+        var head_objects =   hierarchi_class_obj.getHeadObjects().forEach(function(head_item){
+            OutItem(oOutput, head_item);
+        });
+        
+     }
+    oOutput.WriteReport();
+}
+
+function OutItem(oOutput, HierarchiItem){
+    if(HierarchiItem.objOcc.Model().TypeNum()==12 && HierarchiItem.parent==null){ //название процесса верхнего уровня
+        oOutput.OutputLn(HierarchiItem.objOcc.ObjDef().Name(g_nLoc),"Arial",24,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,0);
+    }
+    if(HierarchiItem.objOcc.Model().TypeNum()==12 && HierarchiItem.parent!=null){ //название PSD модели 
+        oOutput.OutputLn(HierarchiItem.objOcc.ObjDef().Name(g_nLoc),"Arial",20,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,10);
+    }
+    if(HierarchiItem.objOcc.SymbolNum()==71){ //название сценария
+        oOutput.OutputLn(HierarchiItem.objOcc.ObjDef().Name(g_nLoc),"Arial",18,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,20);
+    }
+    if(HierarchiItem.objOcc.SymbolNum()==72){//название элемента сценария
+        oOutput.OutputLn(HierarchiItem.objOcc.ObjDef().Name(g_nLoc),"Arial",16,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,30);
+    }
+    if(HierarchiItem.objOcc.SymbolNum()==335){//название функции
+        oOutput.OutputLn(HierarchiItem.objOcc.ObjDef().Name(g_nLoc),"Arial",14,Constants.C_BLACK,Constants.C_WHITE,Constants.FMT_LEFT | Constants.FMT_ITALIC,40);
+    }
+    HierarchiItem.childs.forEach(function(child_item){
+        OutItem(oOutput, child_item);
+    });
+}
+
+//####################################################################################################### 
+//hierarchi_class -  used to build process hierarchi
+//for example:
+//You have a list of functions ececuted by some Role and need to out this functions groupped by Processes hierarchy:
+//1 Level Process
+//    2 Level Process
+//      3 Level Process
+//        function
+//        function
+//        function
+//      3 Level Process
+//        function
+//    2 Level Process
+//      3 Level Process
+//        function
+//####################################################################################################### 
+function init_hierarchi_class(){
+ 
+   // subclass hierarchi_obj
+   // Used to store information about current object, his parrents and childs    
+    var hierarchi_obj_class = function(aris_occ_object, parent_hierarchy_object){
+           this.objOcc = aris_occ_object;
+           this.parent = parent_hierarchy_object;
+           this.childs=[]; //array of child hierarchy objects
+       }
+   
+   //constructor of hierarchi class 
+   var hierarchi_class = function(){ 
+        //array property to store  hierarchi_obj   objects
+        //all this objects will have refferences to their Parrent object and Childs array
+        this.hierarchi_objects_list = [];
+   }
+   //proto is short for prototype
+   var proto =   hierarchi_class.prototype;
+   
+  //####################################################################################################### 
+    //method to add new hierarchi_obj object to array property
+   proto.add_new = function(aris_occ_object){ 
+       
+        //get parent for current object
+          var ParentObj = this.getOrCreateParentObj(aris_occ_object); 
+          
+          //create new hierarchi_obj for current object and assign parrent for it       
+          var new_hierarchy_obj = new hierarchi_obj_class(aris_occ_object, ParentObj);
+          //insert newly created object to it's parent childs
+          if(ParentObj!=null){
+            ParentObj.childs.push(new_hierarchy_obj);
+          }
+          //insert newly created object to array property 
+          this.hierarchi_objects_list.push(new_hierarchy_obj);
+          return  new_hierarchy_obj;
+                
+   }
+  
+    //####################################################################################################### 
+   //method to find parents for current object 
+   proto.getOrCreateParentObj = function(aris_occ_object){
+       
+      var ParentObj=null;
+      //rule for functions on EPC model
+      if(aris_occ_object.Model().TypeNum()==13){
+          //find only parent objects of Function type
+          var superObjects = aris_occ_object.Model().SuperiorObjDefs().filter(function(item){ return item.TypeNum()==22});
+          if(superObjects.length>0){
+              var superObject = superObjects[0];
+              //get only occurrences with Process symbol (exists only on PSD model)
+              var superObjectOccList = superObject.OccList().filter(function(item){ return item.SymbolNum()===72});
+              if(superObjectOccList.length>0){                
+                //check if current object was added previously
+                var existed = this.getIfExistsInHierarchi(superObjectOccList[0]);
+                if(existed){           
+                   ParentObj =  existed;
+                }else{
+                  ParentObj =  this.add_new(superObjectOccList[0]); 
+                }
+              }
+          }
+      }
+      //rule for Process on PSD model
+      if(aris_occ_object.SymbolNum()==72){
+          //get connected Scenario
+         var scenario_objects = aris_occ_object.getConnectedObjOccs([71], Constants.EDGES_IN);
+         if(scenario_objects.length>0){              
+            //check if current object was added previously
+                var existed = this.getIfExistsInHierarchi(scenario_objects[0]);
+                if(existed){           
+                   ParentObj =  existed;
+                }else{
+                  ParentObj =  this.add_new(scenario_objects[0]);  
+                }
+          }
+      }
+       //rule for Scenario on PSD model
+      if(aris_occ_object.SymbolNum()==71){
+          //find only parent objects of Function type
+         var superObjects = aris_occ_object.Model().SuperiorObjDefs().filter(function(item){ return item.TypeNum()==22});
+          var superObject = superObjects[0];
+          //return only object on VAD model
+          var superObjectOccList = superObject.OccList().filter(function(item){ return item.Model().TypeNum()==12});
+          if(superObjectOccList.length>0){              
+             //check if current object was added previously
+                var existed = this.getIfExistsInHierarchi(superObjectOccList[0]);
+                if(existed){           
+                   ParentObj =  existed;
+                }else{
+                  ParentObj =  this.add_new(superObjectOccList[0]);  
+                }
+          }
+      } 
+      //rule for Function on VAD model
+      if(aris_occ_object.Model().TypeNum()==12){
+          //get connected VAD funcrions by EDGES_IN connections
+          var prev_func_objects = aris_occ_object.getConnectedObjOccs([105,141], Constants.EDGES_IN);
+          if(prev_func_objects.length>0){
+            //check if current object was added previously
+            var existed = this.getIfExistsInHierarchi(prev_func_objects[0]);
+            if(existed){           
+               ParentObj =  existed;
+            }else{
+              ParentObj =  this.add_new(prev_func_objects[0]);  
+            }
+          }
+      }
+      
+      return ParentObj;
+   }
+     //####################################################################################################### 
+   //method to check if needed object exists in our array property
+   proto.getIfExistsInHierarchi = function(aris_occ_object){
+       
+       var filtered_arr = this.hierarchi_objects_list.filter(function(element) {
+          //check if ARIS internall ID exists for some object in out array 
+          return element.objOcc.ObjectID() == aris_occ_object.ObjectID() ;
+        }); 
+        //if found then return this object
+        if(filtered_arr.length>0){
+           return filtered_arr[0]; 
+        }
+        
+        return false;
+   }
+   
+    //####################################################################################################### 
+   //method to get highest objects in hierarchy. (without parent)
+   proto.getHeadObjects = function(){
+    return  this.hierarchi_objects_list.filter(function(item){
+      return item.parent==null;  
+    });  
+   }
+   
+       
+   return hierarchi_class;
+}
