@@ -1,0 +1,164 @@
+var g_nLoc =Context.getSelectedLanguage(); 
+var mygroup = ArisData.getSelectedGroups()[0];
+main();
+function main(){
+    var sfile = getImportFile();
+    if (sfile == null) return;
+            
+    var fileConext = Context.getExcelReader(sfile.getData());
+    var sheet = fileConext.getSheets()[0]; //в импортируемом файле должен быть только 1 лист 
+    var grName = mygroup.Name(g_nLoc);
+    grName= grName.replace(" ", "");
+if (grName.indexOf(sheet.getName())<0) { //если имя листа в загружаемом файле не соответствует имени группы, в которой планируется создать модель - выход  с сообщением
+    Dialogs.MsgBox("Внимание!!!\n \n Выбранная группа не соответствует загрружаемому БП.  \n\n  Работа прервана!");
+    return; 
+}
+    var currentrow=0;
+    var subprocessArr = [];
+          while (sheet.getCell(currentrow,0)!=null) {
+            subprocessArr.push(sheet.getCell(currentrow,0).getCellValue( ));
+            currentrow++;
+}
+    var subprManager = [];
+       currentrow = 0;
+        while (sheet.getCell(currentrow,1)!=null) {
+                subprManager.push(sheet.getCell(currentrow,1).getCellValue( ));
+                currentrow++;
+       }
+
+
+if (subprManager.length!=subprocessArr.length) {
+    Dialogs.MsgBox("Внимание!!!\n \n В импортируемом файле разное количество строк в столбцах 1 и 2. \n\n  Работа прервана!");
+    return;
+}
+//теперь можно строить таблицу
+var newmodelName = "Менеджеры подпроцессов БП "+mygroup.Name(g_nLoc);
+
+ var searchItem = ArisData.getActiveDatabase().createSearchItem(Constants.AT_NAME, g_nLoc, "Менеджеры подпроцессов БП *", Constants.SEARCH_CMP_EQUAL, false, true);
+
+  //из массивов с гуидами формируем массив строк и массив столбцов для матричной модели    
+var rowObjs = [];  
+var colObj = [];
+var rowcollspair = [];
+for (var i=0;i<subprManager.length;i++){
+ rowObjs.push( ArisData.getActiveDatabase().FindGUID(subprocessArr[i]));    
+ colObj.push( ArisData.getActiveDatabase().FindGUID(subprManager[i]));
+ rowcollspair.push([rowObjs[i],colObj[i]]);
+} 
+
+/* if (mygroup.ModelList (false, [Constants.MT_MATRIX_MOD] , searchItem).length !=0){
+    Dialogs.MsgBox("Внимание!!!\n \n В группе уже имется такая модель!!! Для продолжения необходимо удалить существующую модель. \n\n  Работа прервана!");
+    return;
+
+}*/
+//var newmodel =  ArisData.getActiveDatabase().FindGUID("93488cc1-4f1e-11ea-1e27-0017a4772806");
+var newmodel = mygroup.CreateModel ( Constants.MT_MATRIX_MOD, newmodelName, g_nLoc );
+var myMatrix = newmodel.getMatrixModel ( );
+/*Sets the Header for the Row & Column*
+var Row_matrixHeader = matrix.getHeader(false)
+var Column_matrixHeader = matrix.getHeader(true)
+var Row_Header_Title = Row_matrixHeader.setTitle("Function",lg)
+var Column_Header_Title = Column_matrixHeader.setTitle("Role",lg)
+*/
+
+var matrixManagers = newmodel.getMatrixModel ( ).getHeader(false);
+var matrixProcesses = newmodel.getMatrixModel ( ).getHeader(true);
+var Row_Header_Title = matrixProcesses.setTitle("Подпроцесс",g_nLoc);
+var Column_Header_Title = matrixManagers.setTitle("Менеджер подпроцесса",g_nLoc);
+
+var newCell = null;
+
+for (var i=0;i<rowObjs.length;i++) {
+ newCell = myMatrix.createHeaderCell(newCell,rowObjs[i],Constants.ST_FUNC, 50,true);
+   newCell.setVisible(true);
+   newCell.setExpanded(true);
+  
+}
+
+newCell = null;
+var uniqueSubPrManagers = ArisData.Unique(colObj);
+for ( i=0; i<uniqueSubPrManagers.length; i++ ) {
+   newCell = myMatrix.createHeaderCell(newCell,uniqueSubPrManagers[i],Constants.ST_EMPL_TYPE, 250,false);
+   newCell.setVisible(true);
+   newCell.setExpanded(true);
+  // newCell
+   newCell.setSymbolNum (Constants.ST_EMPL_TYPE);
+  
+}
+matrixManagers.setOrientation(Constants.MATRIX_HDR_ORIENTATION_STD); //установили горизонтальную ориентацию для ячеек с менеджерами подпроцессов
+
+   myMatrix.setVisibleObjectSymbolTypes([Constants.ST_FUNC], true);   
+   myMatrix.setVisibleObjectSymbolTypes([Constants.ST_EMPL_TYPE], false);//Constants.ST_ACTOR5
+   var CreatedConnectionDataObject = myMatrix.createNewMatrixConnectionDataObject(Constants.ST_EMPL_TYPE, Constants.ST_FUNC, Constants.CT_IS_PRCS_RSPN, null, true, true);//создает объект с параметрами какие связи показывать
+   //связи от обектов типа Position  - 683
+   //до обектов типа Function  - 335
+   //сыязь типа Accepts  - 435
+   //может быть только от Source к Target объекту  - null
+   //Показивать на матрице  - true
+   //Сделать дефолтной связзю  - true
+   // Таких объектов может быть нескольно
+   
+   myMatrix.setCxnData([CreatedConnectionDataObject]);//отправляем этот масив параметров в матрицу. Теперь матрица знает какие связи показывать
+   
+   
+var myMatrixHeaderRows = myMatrix.getHeader ( true);
+var myMatrixHeaderColumns = myMatrix.getHeader ( false);
+var rowCells = myMatrixHeaderRows.getCells();
+var columnCells = myMatrixHeaderColumns.getCells();
+var rowcollCellsPair=[[,]];
+var currentrow = null;
+var currentcell = null;
+
+var cxndef = myMatrix.createCxn( columnCells[0],rowCells[4],Constants.CT_IS_PRCS_RSPN);//создаем дефинишн связи           
+/*for (i=0 ; i<rowCells.length ; i++ ){
+    if ( rowCells[i].getDefinition().GUID()===rowcollspair[i][0].GUID() )  {
+        currentrow = rowCells[i];
+        for ( var j=0; j<columnCells.length; j++) {
+            if ( columnCells[j].getDefinition().GUID()===rowcollspair[i][1].GUID() ) {
+            currentcell =  columnCells[j];
+             myMatrix.createCxn( currentcell,currentrow,Constants.CT_IS_PRCS_RSPN);//создаем дефинишн связи           
+            }
+            
+        }
+    }
+
+}
+*/
+/*for (i=0; i<rowcollspair.length; i++) {
+    for ( var j=0; j<rowCells.length; j++) {
+    if ( rowcollspair[i][0].GUID()===rowCells[j].getDefinition().GUID() ) {
+      rowcollCellsPair[i][0] = rowCells[j];
+    for (var k=0; k <  columnCells.length; k++){
+        if ( columnCells[k].getDefinition().GUID()===rowcollspair[i][1].GUID() ) {
+            rowcollCellsPair[i][1]= columnCells[k];
+        }
+    }
+    }
+   } 
+}*/
+  
+// CreatedMatrixModel.createCxn(newRowCell, newColumnCell,Constants.CT_IS_PRCS_RSPN);//создаем дефинишн связи 
+
+
+// newCell=myMatrix.createHeaderCell ( newCell, rowObjs[0], rowObjs[0].GetDefaultSymbolNum ( ), -1, true);
+//createHeaderCell ( MatrixHeaderCell cellToInsertBefore, ObjDef objDef, int symbol, int size, boolean rowHeader )
+
+//.getCells ( )[0].getDefinition().CxnListFilter(Constants.EDGES_OUT,394)
+
+var s=0;
+} //main
+function getImportFile() {
+    // Init
+    var sdefname = "";
+    var sdefext = "*.xls!!Excel|*.xls||";
+    var sdefdir = "";
+    var stitle = Context.getScriptInfo(Constants.SCRIPT_NAME);
+    
+    bisok = false;
+    var sfiles = Dialogs.getFilePath(sdefname, sdefext, sdefdir, stitle, 0);
+    
+    if (sfiles != null && sfiles.length > 0) {
+        return sfiles[0];
+    }
+    return null;
+}
