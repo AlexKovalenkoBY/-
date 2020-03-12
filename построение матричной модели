@@ -43,7 +43,7 @@ var rowcollspair = [];
 for (var i=0;i<subprManager.length;i++){
  rowObjs.push( ArisData.getActiveDatabase().FindGUID(subprocessArr[i]));    
  colObj.push( ArisData.getActiveDatabase().FindGUID(subprManager[i]));
- rowcollspair.push([rowObjs[i],colObj[i]]);
+ rowcollspair.push([colObj[i],rowObjs[i]]);
 } 
 
 /* if (mygroup.ModelList (false, [Constants.MT_MATRIX_MOD] , searchItem).length !=0){
@@ -54,12 +54,6 @@ for (var i=0;i<subprManager.length;i++){
 //var newmodel =  ArisData.getActiveDatabase().FindGUID("93488cc1-4f1e-11ea-1e27-0017a4772806");
 var newmodel = mygroup.CreateModel ( Constants.MT_MATRIX_MOD, newmodelName, g_nLoc );
 var myMatrix = newmodel.getMatrixModel ( );
-/*Sets the Header for the Row & Column*
-var Row_matrixHeader = matrix.getHeader(false)
-var Column_matrixHeader = matrix.getHeader(true)
-var Row_Header_Title = Row_matrixHeader.setTitle("Function",lg)
-var Column_Header_Title = Column_matrixHeader.setTitle("Role",lg)
-*/
 
 var matrixManagers = newmodel.getMatrixModel ( ).getHeader(false);
 var matrixProcesses = newmodel.getMatrixModel ( ).getHeader(true);
@@ -69,7 +63,7 @@ var Column_Header_Title = matrixManagers.setTitle("Менеджер подпро
 var newCell = null;
 
 for (var i=0;i<rowObjs.length;i++) {
- newCell = myMatrix.createHeaderCell(newCell,rowObjs[i],Constants.ST_FUNC, 50,true);
+ newCell = myMatrix.createHeaderCell(newCell,rowObjs[i],Constants.ST_FUNC, 25,true);
    newCell.setVisible(true);
    newCell.setExpanded(true);
   
@@ -99,166 +93,72 @@ matrixManagers.setOrientation(Constants.MATRIX_HDR_ORIENTATION_STD); //уста�
    // Таких объектов может быть нескольно
    
    myMatrix.setCxnData([CreatedConnectionDataObject]);//отправляем этот масив параметров в матрицу. Теперь матрица знает какие связи показывать
-   
-   
+
 var myMatrixHeaderRows = myMatrix.getHeader ( true);
 var myMatrixHeaderColumns = myMatrix.getHeader ( false);
 var rowCells = myMatrixHeaderRows.getCells();
 var columnCells = myMatrixHeaderColumns.getCells();
-var rowcollCellsPair=[[,]];
-var currentrow = null;
-var currentcell = null;
-var cxnDefArray = [];
-//var currentcellpair = [[,]];
-var currentRowcell = null;
-var currentColcell = null;
-var X = null;
-var Y = null;
-var existedCxn = null;
-while ( cxnDefArray.length <= rowCells.length ) {
-    currentRowcell = null;
-    for ( i=0; i<rowCells.length; i++ )  {
-        if ( rowcollspair[i][0].GUID()===rowCells[i].getDefinition().GUID() )  {
-         X = i;
-       
-        
-               for (var j=0; j<columnCells.length; j++){
-                if (rowcollspair[i][1].GUID()===columnCells[j].getDefinition().GUID() )   {
-                     Y=j;
-                     /*проверяем, есть ли такая связь уже */
-                    existedCxn = columnCells[Y].getDefinition().CxnList().filter(function(conn) {return conn.TargetObjDef ( ).GUID() == rowCells[X].getDefinition().GUID()});
-           if ( existedCxn.length==0) { //если связей нет, то рисуем её 
-                      myMatrix.createCxn( columnCells[Y],rowCells[X],Constants.CT_IS_PRCS_RSPN);
-           }
-                     
-                     /*проверяем, есть ли такая связь уже */
 
-                         cxnDefArray.push([columnCells[Y],rowCells[X]]);
-                         X = null;
-                         Y = null;
-                     break;
-                }
-               }
-
-       }
-    } //for i=0
-  //создаем дефинишн связи           )
-   
-   //// % myMatrix.createCxn( columnCells[0],rowCells[3],Constants.CT_IS_PRCS_RSPN)
-   
-
-} //while
-
-var nexCxnArray = [];
-/*for (i=0;i<cxnDefArray.length ; i++  ) {
-nexCxnArray.push(myMatrix.createCxn( cxnDefArray[i][1],cxnDefArray[i][0],Constants.CT_IS_PRCS_RSPN));//создаем дефинишн связи           )
-
-}*/
-//var cxndef = myMatrix.createCxn( columnCells[0],rowCells[4],Constants.CT_IS_PRCS_RSPN);//создаем дефинишн связи           
-/*for (i=0 ; i<rowCells.length ; i++ ){
-    if ( rowCells[i].getDefinition().GUID()===rowcollspair[i][0].GUID() )  {
-        currentrow = rowCells[i];
-        for ( var j=0; j<columnCells.length; j++) {
-            if ( columnCells[j].getDefinition().GUID()===rowcollspair[i][1].GUID() ) {
-            currentcell =  columnCells[j];
-             myMatrix.createCxn( currentcell,currentrow,Constants.CT_IS_PRCS_RSPN);//создаем дефинишн связи           
-            }
-            
-        }
-    }
-
+//встявляем класс 
+var pair_class = new init_pair_class();
+var columnObjectsCells = [];
+for ( i=0; i<columnCells.length; i++ )  {
+    columnObjectsCells.push( new pair_class (columnCells[i],rowCells, rowcollspair) )
 }
-*/
-/*for (i=0; i<rowcollspair.length; i++) {
-    for ( var j=0; j<rowCells.length; j++) {
-    if ( rowcollspair[i][0].GUID()===rowCells[j].getDefinition().GUID() ) {
-      rowcollCellsPair[i][0] = rowCells[j];
-    for (var k=0; k <  columnCells.length; k++){
-        if ( columnCells[k].getDefinition().GUID()===rowcollspair[i][1].GUID() ) {
-            rowcollCellsPair[i][1]= columnCells[k];
-        }
+
+var existedCxn = null;
+for (i=0; i<columnObjectsCells.length; i++) {
+
+    for (var j=0;j<columnObjectsCells[i].rowsObjs.length;j++) {
+    
+    existedCxn = columnObjectsCells[i].colObj.getDefinition().CxnList().filter(function(conn) {
+      return conn.TargetObjDef ( ).GUID() == columnObjectsCells[i].rowsObjs[j].getDefinition().GUID()});
+      if (existedCxn.length==0 ) {
+        myMatrix.createCxn( columnObjectsCells[i].colObj,columnObjectsCells[i].rowsObjs[j],Constants.CT_IS_PRCS_RSPN);
+      }
+    } 
     }
-    }
-   } 
-}*/
-  
-// CreatedMatrixModel.createCxn(newRowCell, newColumnCell,Constants.CT_IS_PRCS_RSPN);//создаем дефинишн связи 
-
-
-// newCell=myMatrix.createHeaderCell ( newCell, rowObjs[0], rowObjs[0].GetDefaultSymbolNum ( ), -1, true);
-//createHeaderCell ( MatrixHeaderCell cellToInsertBefore, ObjDef objDef, int symbol, int size, boolean rowHeader )
-
-//.getCells ( )[0].getDefinition().CxnListFilter(Constants.EDGES_OUT,394)
-
 var s=0;
 } //main
 
-function init_func_system_obj_class(){
-    var func_system_obj_class= function(objDef_object)
-    {
-      this.objOcc = objDef_object; //объект класса Осс 
-     }
-    var proto =   func_system_obj_class.prototype;
-   
-   
-   proto.getFunctions= function(){ //возвращает все функции, с которыми связана Осс (объект класса)
-    var appSysOccList = this.objOcc.ObjDef().OccList().filter(function(appSysObj){return appSysObj.Model().TypeNum()==13});//получили список Осс на всех ЕРС моделях
-    var functionList = [];
-    appSysOccList.forEach(function(appSysOccObj){
-    var connectedFunction = appSysOccObj.getConnectedObjOccs([335]);
-        for (var i=0 ; i<connectedFunction.length; i++){
-            functionList.push(connectedFunction[i]);
-        }
-   
-    })
-    return functionList;
-    }
+
 function init_pair_class(){ //собирает все окружающие функцию элементы
-    var pair_class= function(rowobjDef_object,rowHeader, colHeader)
+    var pair_class= function(colobjDef_object,rowHeader, pairsArray)
     {
-        this.rowObj = rowobjDef_object;//objDef  объекта функция (или тип лица) 
-        
-        ///////////////////////////////////////////////////////
-        this.Executors = this.getExecutors(); //исполнители 
-        this.inDocs = this.getInDocs(); //вх. документы
-        this.outDocs = this.getOutDocs(); //исх документы
-        this.name = this.getName(); //имя функции
-        /*    взять элемент второго столбца с фильтром = 
-        */
+        this.colObj = colobjDef_object;//objDef  объекта функция (или тип лица) 
+        this.rowsObjs = this.getRowObjs(rowHeader, pairsArray); //объекты, связанные с типом лица
+
     }
     var proto =   pair_class.prototype;
    
-   proto.getName= function(){
-    return this.objOcc.ObjDef().Name(g_nLoc); }
-
-   proto.getMaxCount= function(){
-    return Math.max(this.Executors.length, this.inDocs.length, this.outDocs.length)}
-    
-   proto.getFunctions= function(){
-       return this.objOcc.ObjDef().getConnectedObjs([22,107], Constants.EDGES_OUT);
+    proto.getRowObjs = function(rowHeader, pairsArray){ //дописать метод для инициализации строк для соединения
+    var rowObjsArray  =[] ;
+    var currentCol = this.colObj ;
+    var funcObjDef = [];
+    for ( var i=0; i<pairsArray.length; i++ ) {
+        if (currentCol.getDefinition().GUID () === pairsArray[i][0].GUID() )   {
+            funcObjDef.push(pairsArray[i][1]);
+        }
     }
-    proto.getExecutors = function(){
-    var Executors = this.objOcc.getConnectedObjOccs([Constants.ST_POS]);
-    return Executors;
+    for ( i =0; i<funcObjDef.length; i++) {
+        for (var j=0; j<rowHeader.length; j++) {
+
+            if (funcObjDef[i].GUID() === rowHeader[j].getDefinition().GUID() ) {
+              rowObjsArray.push(rowHeader[j])  ;
+            }
+        
+    } //for j 
+    } //for i 
+    return rowObjsArray;
         
     }
-    proto.getInDocs= function(){
-        return this.objOcc.getConnectedObjOccs([Constants.ST_FILE, Constants.ST_INFO_CARR,Constants.ST_INFO_CARR_EDOC,Constants.ST_DOC],Constants.EDGES_IN);
-    }
-    proto.getOutDocs= function(){
-        return this.objOcc.getConnectedObjOccs([Constants.ST_FILE, Constants.ST_INFO_CARR,Constants.ST_INFO_CARR_EDOC,Constants.ST_DOC],Constants.EDGES_OUT);
-    }
- 
-    
-    return pair_class;   
+     return pair_class;   
 }
    
-//    proto.getIputDocs(){}
-
-   return func_system_obj_class;   
-}
 
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 function getImportFile() {
     // Init
