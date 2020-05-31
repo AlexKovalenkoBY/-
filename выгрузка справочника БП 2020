@@ -1,0 +1,82 @@
+var myMain = createMainInstance (Context, ArisData) ;
+myMain.execute();
+
+function createMainInstance(context, arisData)  {
+
+    function Main(context, arisData) {
+        
+        this._context = context; 
+        this._arisData = arisData;
+
+    }
+     
+    Main.prototype.execute =  function(){
+        if (!this._context || !this._arisData) {
+            return; // unit test environment use case
+        }
+        var g_nLoc =this._context.getSelectedLanguage(); 
+          var startGroup = ArisData.getActiveDatabase().RootGroup ( );
+          var startModel = startGroup.ModelList ( true, [Constants.MT_VAL_ADD_CHN_DGM] ).filter(function (mymodel){
+          return ((mymodel.Name(g_nLoc)==" Верхнеуровневая модель Банка")&&
+                 (mymodel.Group().Name(g_nLoc)=="  Модель (дерево) бизнес-процессов Банка"))
+          })[0];
+          var grBusinessModel =  startModel.Group().Parent();
+          //FindGUID("b57555230-bf14-11e7-1e27-0017a4772806");  //Функция  "Верхнеуровневая модель Банка"
+          var startelement = startModel.ObjOccListBySymbol ( [Constants.ST_VAL_ADD_CHN_SML_2] )[0];//получили стартовый элемент модели - дерева
+          
+          var repo_class = new init_repo_class(Context, ArisData);
+          var objtree = new repo_class(Context, ArisData, startelement);
+          
+          var s=0;       
+        
+        function init_repo_class(context, arisData){ // класс репозитория
+        var repo_class = function (context, arisData, firstelement){
+           this.element = firstelement;
+           
+           this.childs = this.getChilds (); 
+           this.parents = this.getParentObj ();
+
+        }
+        var proto = repo_class.prototype;
+       proto.getChilds = function (){
+           
+       var element = this.element;
+       var cxnarray = element.CxnOccList ( );
+       var childArray = [];
+       for (var i=0; i< cxnarray.length; i++) {
+        childArray.push(cxnarray[i].TargetObjOcc ( ));
+        
+       }
+       return childArray;
+       // getConnectedObjOccs ( int[] aSymbolTypes, int direction )
+       }
+
+       proto.getParentObj = function (){
+       var element = this.element;
+       
+         var cxnarray = element.CxnOccList ( );
+       var parrent = [];
+       for (var i=0; i< cxnarray.length; i++) {
+        parrent.push(cxnarray[i].SourceObjOcc ( ));
+        
+       }
+       parrent  = arisData.Unique(parrent);
+       return parrent[0];
+       // getConnectedObjOccs ( int[] aSymbolTypes, int direction )
+       }
+
+
+
+
+
+       return repo_class;
+        }// endOF класс репозитория 
+        
+    } //end of prototype.execute 
+
+////////////////////////////////////////////////////////
+var myMain  = new Main(context, arisData);
+ return myMain;
+
+////////////////////////////////////////////////////////
+} //function createMainInstance(context, arisData)  {
