@@ -15,24 +15,101 @@ function createMainInstance(context, arisData)  {
             return; // unit test environment use case
         }
         var g_nLoc =this._context.getSelectedLanguage(); 
-          var startGroup = ArisData.getActiveDatabase().RootGroup ( );
-          var startModel = startGroup.ModelList ( true, [Constants.MT_VAL_ADD_CHN_DGM] ).filter(function (mymodel){
+          var rootGroup = arisData.getActiveDatabase().RootGroup ( );
+          
+          var model_treeGr = rootGroup.Childs(true).filter(function(mygr){ 
+
+             return  ((mygr.Name(g_nLoc) =="  Модель (дерево) бизнес-процессов Банка")
+             &&(mygr.Path(g_nLoc) == "Бизнес-модель Банка\\Бизнес-модель  «как есть»\\  Модель (дерево) бизнес-процессов Банка")
+             );
+          })[0];
+          ////////////
+/* 
+так тоже можно, но пока не требуется
+
+ var db = ArisData.getSelectedDatabases()[0]
+ var searchItem = db.createSearchItem(Constants.AT_NAME, g_nLoc, false) //name not maintained
+ var searchItem2 = db.createSearchItem(Constants.AT_NAME, g_nLoc, "  Модель (дерево) бизнес-процессов Банка", Constants.SEARCH_CMP_EQUAL, true, true)//case sensitive, allow wildcards
+ var result = db.Find(Constants.SEARCH_GROUP, null, searchItem.or(searchItem2)).filter(function(gr){
+ return gr.Path() == "Бизнес-модель Банка\Бизнес-модель  «как есть»\  Модель (дерево) бизнес-процессов Банка"
+ })
+ */
+          //////////
+          var allmodels = model_treeGr.ModelList ( true, [Constants.MT_VAL_ADD_CHN_DGM] );
+          var alldefs = [];
+          for (var i=0; i<allmodels.length; i++){
+            alldefs = alldefs.concat(allmodels[i].ObjOccListBySymbol ( [Constants.ST_VAL_ADD_CHN_SML_1] ).map(function (occ){return occ.ObjDef();})) 
+          }
+      alldefs = arisData.Unique(alldefs);//.map(function(def){return def.Name(g_nLoc)}); //собрали все объекты для дальнейшего вывода
+      alldefs = arisData.sort(alldefs,Constants.AT_NAME, context.getSelectedLanguage() );
+
+      
+      
+function init_bp_obj_class (context, arisData){
+
+function bp_obj_class (context, arisData, bpdef){
+    this.objDef = bpdef;    
+    this.id = bpdef.Identifier().slice(firstelement.ObjDef().Identifier().indexOf("."));
+    this.num = bpdef.Name(g_nLoc).slice(bpdef.Name(g_nLoc).indexOf(" "));
+    this.name = bpdef.Name(g_nLoc);
+    this.owner = this.getOwner();
+    this.detalisation = this.getDetalisation();
+    this.parent = bpdef.getConnectedObjs ([Constants.OT_FUNC] , Constants.EDGES_IN, [Constants.CT_IS_PRCS_ORNT_SUPER] )[0];
+    this.dateBegin = this.getStartDate();
+    this.dateEnd = this.getEndDate();
+    this.target = this.getTarget();
+    this.inputs = this.getInputs();
+    this.outputs = this.getOutputs();
+    this.products = this.getProducts();
+    this.remark = bpdef.Attribute(Constants.AT_REM,g_nLoc).getValue();
+ 
+}
+
+        var proto = bp_obj_class.prototype;
+        proto.getOwner = function (){
+        var obj = this.objDef;
+        var model = obj.OccList ( [Constants.MT_VAL_ADD_CHN_DGM] ).filter(function(occ){
+            return occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0;
+        })[0];
+        var ownerobj = model.ObjOccListFilter ( Constants.OT_PERS_TYPE ); 
+        if (ownerobj.length>1) {
+            Dialogs.MsgBox("ВНИМАНИЕ!!! \n для БП "+obj.Name(g_nLoc)+" указано более одного владельца!!!")
+            return "ERROR WITH OWNER"
+        }
+        else {
+            if (ownerobj.length==0) {            Dialogs.MsgBox("ВНИМАНИЕ!!! \n для БП "+obj.Name(g_nLoc)+" указано более одного владельца!!!")
+             return "ERROR WITH OWNER 0 "
+            } 
+            else {
+            return ownerobj[0].Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().slice(ownerobj[0].Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().indexOf("_"));
+            }
+                
+        }
+        
+        
+        }
+
+return bp_obj_class;
+}      
+      
+/*       var startModel = rootGroup.ModelList ( true, [Constants.MT_VAL_ADD_CHN_DGM] ).filter(function (mymodel){
           return ((mymodel.Name(g_nLoc)==" Верхнеуровневая модель Банка")&&
                  (mymodel.Group().Name(g_nLoc)=="  Модель (дерево) бизнес-процессов Банка"))
           })[0];
           var grBusinessModel =  startModel.Group().Parent();
-          //FindGUID("b57555230-bf14-11e7-1e27-0017a4772806");  //Функция  "Верхнеуровневая модель Банка"
+          //FindGUID("b57555230-bf14-11e7-1e27-0017a4772806");  //Функция  "Верхнеуровневая модель Банка"
           var startelement = startModel.ObjOccListBySymbol ( [Constants.ST_VAL_ADD_CHN_SML_2] )[0];//получили стартовый элемент модели - дерева
           
           var repo_class = new init_repo_class(Context, ArisData);
           var objtree = new repo_class(Context, ArisData, startelement);
           
           var s=0;       
-        
+ */       
         function init_repo_class(context, arisData){ // класс репозитория
+        
         var repo_class = function (context, arisData, firstelement){
+           this.id  = firstelement.ObjDef().Identifier().slice(firstelement.ObjDef().Identifier().indexOf("."));;
            this.element = firstelement;
-           
            this.childs = this.getChilds (); 
            this.parents = this.getParentObj ();
 
