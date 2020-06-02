@@ -1,3 +1,4 @@
+//test from VS CODE
 var myMain = createMainInstance (Context, ArisData) ;
 myMain.execute();
 
@@ -44,11 +45,41 @@ function createMainInstance(context, arisData)  {
       alldefs = arisData.sort(alldefs,Constants.AT_NAME, context.getSelectedLanguage() );
 
 var obj_class = new init_bp_obj_class (context, arisData);
-var onebp = new obj_class (context, arisData,alldefs[0]);
+ 
+var allbp =[];
+for (var i=0; i<alldefs.length;i++){
+allbp.push( new obj_class (context, arisData,alldefs[i]));
+}
+
 var s=0;      
   var outFile = new java.io.FileWriter(getString ("TEXT_1"), false);  // file DataTreeBP.CSV    
-   var strToFile = "outputString";
-   outFile.write(strToFile);
+   var quo = "\"";
+   var nl = "\r\n";
+   var comma = "|";////разделитель между полями!!!!! при необходимости заменить  на нужный 
+   var qcq = quo + comma + quo;
+  
+  var nl = "\r\n";
+  var strToFile = "outputString";
+ for (i=0; i< allbp.length;i++)  { //279- 3.2.5.5
+   strToFile = quo + 
+                allbp[i].id+qcq+
+                allbp[i].num+qcq+
+                allbp[i].name+qcq+
+                allbp[i].owner+qcq+
+                allbp[i].numTextName+qcq+
+                allbp[i].lastnode +qcq+
+                allbp[i].getParentBP+qcq+
+                allbp[i].dateBegin+qcq+
+                allbp[i].dateEnd+qcq+
+                Replacer(String(allbp[i].target)) + qcq +
+                Replacer(String(allbp[i].inputs)) + qcq +
+                Replacer(String(allbp[i].outputs)) + qcq +
+                Replacer(String(allbp[i].products)) + qcq +
+                Replacer(String(allbp[i].remark)) + quo + nl;
+   
+        outFile.write(strToFile);
+ 
+ }
     outFile.flush();
     outFile.close();
 
@@ -63,7 +94,7 @@ function bp_obj_class (context, arisData, bpdef){
     this.name = bpdef.Name(g_nLoc);
     this.owner = this.getOwner();
     this.numTextName = this.getnumTextBPName();
-    this.detalisation = this.detalisationExist();
+    this.lastnode = this.detalisationExist();
     this.getParentBP = this.getParentBP();
     this.dateBegin = this.getStartDate();
     this.dateEnd = this.getEndDate();
@@ -71,22 +102,30 @@ function bp_obj_class (context, arisData, bpdef){
     this.inputs = this.getInputs();
     this.outputs = this.getOutputs();
     this.products = this.getProducts();
-    this.remark = bpdef.Attribute(Constants.AT_REM,g_nLoc).getValue();
+    this.remark = bpdef.Attribute(Constants.AT_REM,g_nLoc).getValue().toString().trim();
 
 }
 
         var proto = bp_obj_class.prototype;
         proto.getOwner = function (){
         var obj = this.objDef;
-        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0 })[0];
-        
-        if (modelOkr == null) {
-            var modelBP = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0];
+
+     var modelOkr =obj.OccList().filter(function(occ){
+     return occ.getConnectedObjOccs ( [Constants.ST_EMPL_TYPE] , Constants.EDGES_IN );})[0];
+  //   return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2)||(occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_1))}).
+   //  map(function(occ){return occ.Model() }).filter(function(model){ return ((model.Name(g_nLoc).indexOf("_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("Н_Окружение БП ") ==0)) })[0];
+     
+     
+     
+/*        if (modelOkr == null) {
+          //  var modelBP = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0];
+            var modelOkr = obj.OccList().filter(function(occ){
+                 return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2))});
+//                 .map(function(occ){return occ.Model() })[0];
         }
-        else {
-        modelBP = modelOkr;
-        }
-        var ownerobj = modelBP.ObjOccListFilter ( Constants.OT_PERS_TYPE ); 
+*/      
+        if (modelOkr==null) {Dialogs.MsgBox("нет модели для БП "+ obj.Name(g_nLoc))};
+        var ownerobj = modelOkr.getConnectedObjOccs ( [Constants.ST_EMPL_TYPE] , Constants.EDGES_IN );
         if (ownerobj.length>1) {
             Dialogs.MsgBox("ВНИМАНИЕ!!! \n для БП "+obj.Name(g_nLoc)+" указано более одного владельца!!!")
             return "ERROR WITH OWNER"
@@ -94,7 +133,7 @@ function bp_obj_class (context, arisData, bpdef){
         else {
             if (ownerobj.length==0) { return 999; } 
             else {
-            return ownerobj[0].Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().slice(ownerobj[0].Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().indexOf("_"));
+            return ownerobj[0].ObjDef().Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().slice(0,ownerobj[0].ObjDef().Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().indexOf("_"));
             }
                 
         }
@@ -157,28 +196,48 @@ function bp_obj_class (context, arisData, bpdef){
         
         proto.detalisationExist = function (){
         var obj = this.objDef;
-     //   var modelOkr = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0 })[0];
-        var modelBP = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0];
+/*        var occs = obj.OccList().filter(function(occ){
+        return occ.getConnectedObjOccs( [Constants.ST_VAL_ADD_CHN_SML_2,Constants.ST_VAL_ADD_CHN_SML_1] , Constants.EDGES_OUT)})    ;
+*/
+         var modelBP = obj.AssignedModels ( ).filter(function(mod){
+               return ((mod.Name(g_nLoc).indexOf("_Окружение БП")==0))});
         
-        if (modelBP==null) {return 0}
-             else {return 1}
+        if (modelBP.length==0) {return 1}
+             else {return 0}
      
         
         }
 
         proto.getParentBP = function(){
         var obj = this.objDef;
-        var parent = obj.getConnectedObjs ([Constants.OT_FUNC] , Constants.EDGES_IN, [Constants.CT_IS_PRCS_ORNT_SUPER] )[0].Identifier(g_nLoc);
+        var parent = obj.CxnListFilter ( Constants.EDGES_IN, [Constants.CT_IS_PRCS_ORNT_SUPER] );
+        if (parent.length ==0 ) {
+        //    Dialogs.MsgBox("нет парента для "+ obj.Name(g_nLoc));
+        return 0}
+        else { parent = parent[0].SourceObjDef ( );
+       /* var parent = obj.OccList().filter(function(occ){
+            return occ.getConnectedObjOccs ( [Constants.ST_VAL_ADD_CHN_SML_2,Constants.ST_VAL_ADD_CHN_SML_1] , Constants.EDGES_IN ).length!=0 ;   })[0] ; //ищем рыбий хвост */
+     if (parent==null) {return 0}
+    else {
+            parent = parent.Identifier(g_nLoc);
+        
         return parent.slice(parent.indexOf(".")+1);
+        }
+        }
         }
 
         proto.getStartDate = function (){
         var obj = this.objDef;
-        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0 })[0];
-        
-        if (modelOkr == null) {
-            modelOkr = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0]; //вместо модели окружения ищем одноименную модель
-        }
+//        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return ((mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(mod.Name(g_nLoc).indexOf("Н_Окружение БП ") == 0))})[0];
+             var modelOkr =obj.OccList().filter(function(occ){
+             return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2)||(occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_1))}).
+             map(function(occ){return occ.Model() }).filter(function(model){ return ((model.Name(g_nLoc).indexOf("_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("Н_Окружение БП ") ==0)) })[0];
+                if (modelOkr == null) {
+                  //  var modelBP = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0];
+                    var modelOkr = obj.OccList().filter(function(occ){
+                         return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2)||(occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_1))}).map(function(occ){return occ.Model() })[0];
+                }
+               
         var datestart = modelOkr.Attribute(Constants.AT_VALID_FROM,g_nLoc).getValue();
         if ( datestart == "" ) { return "2017-04-20"}
         else {
@@ -195,11 +254,14 @@ function bp_obj_class (context, arisData, bpdef){
          
         proto.getEndDate = function (){
         var obj = this.objDef;
-        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0 })[0];
-        
-        if (modelOkr == null) {
-            modelOkr = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0]; //вместо модели окружения ищем одноименную модель
-        }
+             var modelOkr =obj.OccList().filter(function(occ){
+             return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2)||(occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_1))}).
+             map(function(occ){return occ.Model() }).filter(function(model){ return ((model.Name(g_nLoc).indexOf("_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("Н_Окружение БП ") ==0)) })[0];
+                if (modelOkr == null) {
+                  //  var modelBP = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0];
+                    var modelOkr = obj.OccList().filter(function(occ){
+                         return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2)||(occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_1))}).map(function(occ){return occ.Model() })[0];
+                }
         var dateend = modelOkr.Attribute(Constants.AT_VALID_UNTIL,g_nLoc).getValue();
         if ( dateend == "" ) { return "2100-01-01"}
         else {
@@ -216,23 +278,29 @@ function bp_obj_class (context, arisData, bpdef){
         proto.getTargets = function () {
         var obj = this.objDef;
         
-        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0 })[0];
+        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return ((mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(mod.Name(g_nLoc).indexOf("Н_Окружение БП ") == 0)) })[0];
         if (modelOkr == null) {
          return ""}
          else {
                 var targets  = modelOkr.ObjOccListBySymbol ( [Constants.ST_OBJCTV] );
-                var target = "";
+                var target = new String;
                 for (var i=0; i< targets.length; i++) {
-  target = target+targets[i].ObjDef().Name(g_nLoc).toString().trim()+" "+targets[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().trim()+". ";
+                  target = target+targets[i].ObjDef().Name(g_nLoc).toString().trim();
+//                  target.replaceAll(String);
+                  if (targets[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().length()==0)  {target = target + "." }
+                  else { target = target + " "+targets[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().trim()+"." ;}
                 }
-             return target.trim();
+
+             return target;
+        //условие ? выражение1 : выражение2     
+             
          }
        
         }
         proto.getInputs = function() {
                 var obj = this.objDef;
                 var objOCC = obj.OccList (  ).filter(function(occ){
-                return (occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)})[0];
+                return ((occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("Н_Окружение БП ") == 0))})[0];
          if (objOCC==null) {return ""}
                 var inputsObj=objOCC.getConnectedObjOccs ( [Constants.ST_PACK, Constants.ST_PACK_PIC_2] , Constants.EDGES_IN );
     if (inputsObj.length==0)  {return ""}
@@ -240,17 +308,22 @@ function bp_obj_class (context, arisData, bpdef){
        var allinputs ="";
         for (var i=0; i<inputsObj.length;i++){
          allinputs = allinputs +
-         inputsObj[i].ObjDef().Name(g_nLoc).toString().trim()+" "+
-         inputsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().trim()+". ";
+         inputsObj[i].ObjDef().Name(g_nLoc).toString().trim();
+         if (inputsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().length()==0 ) { 
+               allinputs = allinputs+"." }
+               else {
+                     allinputs=allinputs+" "+inputsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().trim()+". ";
+                    }
         }
-        return allinputs.trim()
+        
+        return String(allinputs);
         }
         }
         proto.getOutputs = function() {
          var obj = this.objDef;
          var objOCC = obj.OccList (  ).filter(function(occ){
                     //[Constants.MT_VAL_ADD_CHN_DGM]
-                return (occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)})[0];
+                return ((occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("Н_Окружение БП ") == 0))})[0];
                      if (objOCC==null) {return ""};
                 var outputsObj=objOCC.getConnectedObjOccs ( [Constants.ST_PACK, Constants.ST_PACK_PIC_2] , Constants.EDGES_OUT );
         if (outputsObj.length==0) {return ""}
@@ -258,45 +331,68 @@ function bp_obj_class (context, arisData, bpdef){
         var alloutputs ="";
         for (var i=0; i<outputsObj.length;i++){
          alloutputs = alloutputs +
-         outputsObj[i].ObjDef().Name(g_nLoc).toString().trim()+" "+
-         outputsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().trim()+". ";
+         outputsObj[i].ObjDef().Name(g_nLoc).toString().trim();
+         if (outputsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().length()==0) {
+            alloutputs = alloutputs+"."}
+            else {alloutputs = alloutputs+" "+
+                 outputsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().trim()+". ";
+                  }
         }
-        return alloutputs.trim()
+        return alloutputs;
         }
         }
        proto.getProducts = function() {
          var obj = this.objDef;
          var objOCC = obj.OccList (  ).filter(function(occ){
-            return (occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)});
-        if (objOCC.length==0) {return ""}
+            return (occ.getConnectedObjOccs ( [Constants.ST_PERFORM, Constants.ST_PROD_SERV] , Constants.EDGES_OUT ).length!=0);
+//         ((occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("Н_Окружение БП ") == 0)
+         });
+        if ( objOCC.length==0 ) {return ""}
         else {
-        var productsObj=objOCC.getConnectedObjOccs ( [Constants.ST_PERFORM, Constants.ST_PROD_SERV] , Constants.EDGES_OUT );
+        var productsObj=objOCC[0].getConnectedObjOccs ( [Constants.ST_PERFORM, Constants.ST_PROD_SERV] , Constants.EDGES_OUT );
          var allproducts ="";
          for (var i=0; i<productsObj.length;i++){
          allproducts = allproducts +
-         productsObj[i].ObjDef().Name(g_nLoc).toString().trim()+" "+
-         productsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().trim()+". ";
+         productsObj[i].ObjDef().Name(g_nLoc).toString().trim();
+             if (productsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().length()==0) {allproducts=allproducts+"."; }
+             else { allproducts = allproducts+ +" "+         productsObj[i].ObjDef().Attribute(Constants.AT_DESC, g_nLoc).getValue().toString().trim()+". ";
+            }
         }
-        return allproducts.trim();
+        return allproducts;
        }
        }
 return bp_obj_class;
 }      
+function Replacer(str){
+    
+    var newStr = new String; 
+    var arrStr = str.split("");
+    
+    for (var i = 0; i < arrStr.length; ++i){
+        switch (arrStr[i]){
+            case String.fromCharCode(34): // " простая двойная кавычка
+            case String.fromCharCode(171):// открывающаяся парная кавычка
+            case String.fromCharCode(187): //закрывающаяся парная кавычка
+            newStr += String.fromCharCode(92) + String.fromCharCode(34); // 92 -символ \ (обратный слэш) + "
+            break;
+            
+            case String.fromCharCode(13)://разрыв строки
+            newStr += String.fromCharCode(92) + String.fromCharCode(114);// комбинация символов \r
+            break;
+            
+            case String.fromCharCode(10):
+            newStr += String.fromCharCode(92) + String.fromCharCode(110); // подставляется \n
+            break;
+            
+            default:
+            newStr += arrStr[i];     
+        }
+    }  
+
+    return newStr;
+}
       
-/*       var startModel = rootGroup.ModelList ( true, [Constants.MT_VAL_ADD_CHN_DGM] ).filter(function (mymodel){
-          return ((mymodel.Name(g_nLoc)==" Верхнеуровневая модель Банка")&&
-                 (mymodel.Group().Name(g_nLoc)=="  Модель (дерево) бизнес-процессов Банка"))
-          })[0];
-          var grBusinessModel =  startModel.Group().Parent();
-          //FindGUID("b57555230-bf14-11e7-1e27-0017a4772806");  //Функция  "Верхнеуровневая модель Банка"
-          var startelement = startModel.ObjOccListBySymbol ( [Constants.ST_VAL_ADD_CHN_SML_2] )[0];//получили стартовый элемент модели - дерева
-          
-          var repo_class = new init_repo_class(Context, ArisData);
-          var objtree = new repo_class(Context, ArisData, startelement);
-          
-          var s=0;       
- */       
-        function init_repo_class(context, arisData){ // класс репозитория
+function init_repo_class(context, arisData){ // класс репозитория
         
         var repo_class = function (context, arisData, firstelement){
            this.id  = firstelement.ObjDef().Identifier().slice(firstelement.ObjDef().Identifier().indexOf("."));;
@@ -347,4 +443,4 @@ var myMain  = new Main(context, arisData);
  return myMain;
 
 ////////////////////////////////////////////////////////
-} //function createMainInstance(context, arisData)  {
+} //f end OF function createMainInstance(context, arisData)  {
