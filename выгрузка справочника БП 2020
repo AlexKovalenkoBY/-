@@ -1,4 +1,3 @@
-//test from VS CODE
 var myMain = createMainInstance (Context, ArisData) ;
 myMain.execute();
 
@@ -39,7 +38,7 @@ function createMainInstance(context, arisData)  {
           var allmodels = model_treeGr.ModelList ( true, [Constants.MT_VAL_ADD_CHN_DGM] );
           var alldefs = [];
           for (var i=0; i<allmodels.length; i++){
-            alldefs = alldefs.concat(allmodels[i].ObjOccListBySymbol ( [Constants.ST_VAL_ADD_CHN_SML_1] ).map(function (occ){return occ.ObjDef();})) 
+            alldefs = alldefs.concat(allmodels[i].ObjOccListBySymbol ( [Constants.ST_VAL_ADD_CHN_SML_1] ).map(function (occ){return occ.ObjDef();}));
           }
       alldefs = arisData.Unique(alldefs);//.map(function(def){return def.Name(g_nLoc)}); //собрали все объекты для дальнейшего вывода
       alldefs = arisData.sort(alldefs,Constants.AT_NAME, context.getSelectedLanguage() );
@@ -55,13 +54,14 @@ var s=0;
   var outFile = new java.io.FileWriter(getString ("TEXT_1"), false);  // file DataTreeBP.CSV    
    var quo = "\"";
    var nl = "\r\n";
-   var comma = "|";////разделитель между полями!!!!! при необходимости заменить  на нужный 
+   var comma = ",";////разделитель между полями!!!!! при необходимости заменить  на нужный 
    var qcq = quo + comma + quo;
   
   var nl = "\r\n";
   var strToFile = "outputString";
  for (i=0; i< allbp.length;i++)  { //279- 3.2.5.5
-   strToFile = quo + 
+    if (allbp[i].dateBegin!= "2100-01-01") {
+     strToFile = quo + 
                 allbp[i].id+qcq+
                 allbp[i].num+qcq+
                 allbp[i].name+qcq+
@@ -78,7 +78,7 @@ var s=0;
                 Replacer(String(allbp[i].remark)) + quo + nl;
    
         outFile.write(strToFile);
- 
+ }
  }
     outFile.flush();
     outFile.close();
@@ -107,38 +107,16 @@ function bp_obj_class (context, arisData, bpdef){
 }
 
         var proto = bp_obj_class.prototype;
+
         proto.getOwner = function (){
         var obj = this.objDef;
+            var ownerArr = obj.CxnListFilter ( Constants.EDGES_IN, [Constants.CT_DECD_ON, Constants.CT_DECID_ON,Constants.CT_IS_OWN,Constants.CT_IS_SPEC_OWN] ).map(function (cxn) {
+            return cxn.SourceObjDef();     });
 
-     var modelOkr =obj.OccList().filter(function(occ){
-     return occ.getConnectedObjOccs ( [Constants.ST_EMPL_TYPE] , Constants.EDGES_IN );})[0];
-  //   return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2)||(occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_1))}).
-   //  map(function(occ){return occ.Model() }).filter(function(model){ return ((model.Name(g_nLoc).indexOf("_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("Н_Окружение БП ") ==0)) })[0];
-     
-     
-     
-/*        if (modelOkr == null) {
-          //  var modelBP = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0];
-            var modelOkr = obj.OccList().filter(function(occ){
-                 return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2))});
-//                 .map(function(occ){return occ.Model() })[0];
-        }
-*/      
-        if (modelOkr==null) {Dialogs.MsgBox("нет модели для БП "+ obj.Name(g_nLoc))};
-        var ownerobj = modelOkr.getConnectedObjOccs ( [Constants.ST_EMPL_TYPE] , Constants.EDGES_IN );
-        if (ownerobj.length>1) {
-            Dialogs.MsgBox("ВНИМАНИЕ!!! \n для БП "+obj.Name(g_nLoc)+" указано более одного владельца!!!")
-            return "ERROR WITH OWNER"
-        }
-        else {
-            if (ownerobj.length==0) { return 999; } 
+            if (ownerArr.length ==0) { return 999 }
             else {
-            return ownerobj[0].ObjDef().Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().slice(0,ownerobj[0].ObjDef().Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().indexOf("_"));
-            }
-                
-        }
-        
-        
+                return ownerArr[0].Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().slice(0,ownerArr[0].Attribute(Constants.AT_PERS_RESP,g_nLoc).getValue().toString().indexOf("_"));
+              }
         }
         //////
         proto.getnumTextBPName = function (){
@@ -200,7 +178,7 @@ function bp_obj_class (context, arisData, bpdef){
         return occ.getConnectedObjOccs( [Constants.ST_VAL_ADD_CHN_SML_2,Constants.ST_VAL_ADD_CHN_SML_1] , Constants.EDGES_OUT)})    ;
 */
          var modelBP = obj.AssignedModels ( ).filter(function(mod){
-               return ((mod.Name(g_nLoc).indexOf("_Окружение БП")==0))});
+               return (((mod.Name(g_nLoc).indexOf("_Окружение БП")==0)||(mod.Name(g_nLoc).indexOf("Н_Окружение БП")==0)||(mod.Name(g_nLoc).indexOf("H_Окружение БП")==0))/*&& (mod.Group().Path(g_nLoc).indexOf("Бизнес-модель  «как есть»")>-1 )*/)});
         
         if (modelBP.length==0) {return 1}
              else {return 0}
@@ -231,7 +209,7 @@ function bp_obj_class (context, arisData, bpdef){
 //        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return ((mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(mod.Name(g_nLoc).indexOf("Н_Окружение БП ") == 0))})[0];
              var modelOkr =obj.OccList().filter(function(occ){
              return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2)||(occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_1))}).
-             map(function(occ){return occ.Model() }).filter(function(model){ return ((model.Name(g_nLoc).indexOf("_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("Н_Окружение БП ") ==0)) })[0];
+             map(function(occ){return occ.Model() }).filter(function(model){ return (((model.Name(g_nLoc).indexOf("_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("Н_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("H_Окружение БП ") ==0))&& (model.Group().Path(g_nLoc).indexOf("Бизнес-модель  «как есть»")>-1 )) })[0];
                 if (modelOkr == null) {
                   //  var modelBP = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0];
                     var modelOkr = obj.OccList().filter(function(occ){
@@ -256,7 +234,8 @@ function bp_obj_class (context, arisData, bpdef){
         var obj = this.objDef;
              var modelOkr =obj.OccList().filter(function(occ){
              return ((occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_2)||(occ.SymbolNum ( )==Constants.ST_VAL_ADD_CHN_SML_1))}).
-             map(function(occ){return occ.Model() }).filter(function(model){ return ((model.Name(g_nLoc).indexOf("_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("Н_Окружение БП ") ==0)) })[0];
+             map(function(occ){return occ.Model() }).filter(function(model){ return (((model.Name(g_nLoc).indexOf("_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("Н_Окружение БП ") ==0)||(model.Name(g_nLoc).indexOf("H_Окружение БП ") ==0))
+             && (model.Group().Path(g_nLoc).indexOf("Бизнес-модель  «как есть»")>-1 ))})[0];
                 if (modelOkr == null) {
                   //  var modelBP = obj.AssignedModels ( ).filter(function(mod){return mod.Name(g_nLoc)==obj.Name(g_nLoc)})[0];
                     var modelOkr = obj.OccList().filter(function(occ){
@@ -278,7 +257,7 @@ function bp_obj_class (context, arisData, bpdef){
         proto.getTargets = function () {
         var obj = this.objDef;
         
-        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return ((mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(mod.Name(g_nLoc).indexOf("Н_Окружение БП ") == 0)) })[0];
+        var modelOkr = obj.AssignedModels ( ).filter(function(mod){return ((mod.Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(mod.Name(g_nLoc).indexOf("Н_Окружение БП ") == 0)||(mod.Name(g_nLoc).indexOf("H_Окружение БП ") ==0)) })[0];
         if (modelOkr == null) {
          return ""}
          else {
@@ -300,7 +279,7 @@ function bp_obj_class (context, arisData, bpdef){
         proto.getInputs = function() {
                 var obj = this.objDef;
                 var objOCC = obj.OccList (  ).filter(function(occ){
-                return ((occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("Н_Окружение БП ") == 0))})[0];
+                return ((occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("Н_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("H_Окружение БП ") ==0))})[0];
          if (objOCC==null) {return ""}
                 var inputsObj=objOCC.getConnectedObjOccs ( [Constants.ST_PACK, Constants.ST_PACK_PIC_2] , Constants.EDGES_IN );
     if (inputsObj.length==0)  {return ""}
@@ -323,7 +302,7 @@ function bp_obj_class (context, arisData, bpdef){
          var obj = this.objDef;
          var objOCC = obj.OccList (  ).filter(function(occ){
                     //[Constants.MT_VAL_ADD_CHN_DGM]
-                return ((occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("Н_Окружение БП ") == 0))})[0];
+                return ((occ.Model().Name(g_nLoc).indexOf("_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("Н_Окружение БП ") == 0)||(occ.Model().Name(g_nLoc).indexOf("H_Окружение БП ") ==0))})[0];
                      if (objOCC==null) {return ""};
                 var outputsObj=objOCC.getConnectedObjOccs ( [Constants.ST_PACK, Constants.ST_PACK_PIC_2] , Constants.EDGES_OUT );
         if (outputsObj.length==0) {return ""}
@@ -443,4 +422,4 @@ var myMain  = new Main(context, arisData);
  return myMain;
 
 ////////////////////////////////////////////////////////
-} //f end OF function createMainInstance(context, arisData)  {
+} //function createMainInstance(context, arisData)  {
